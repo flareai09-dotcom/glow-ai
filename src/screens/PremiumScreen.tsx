@@ -1,0 +1,256 @@
+import React from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Dimensions } from 'react-native';
+import { ChevronLeft, Check, Crown, Star, Zap } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+
+const { width } = Dimensions.get('window');
+
+const features = [
+    { icon: Star, text: 'Unlimited Skin Analysis' },
+    { icon: Zap, text: 'Personalized Routine Generator' },
+    { icon: Crown, text: 'Priority Dermatologist Support' },
+    { icon: Check, text: 'Ad-free Experience' },
+];
+
+export function PremiumScreen({ navigation }: { navigation: any }) {
+    return (
+        <View style={styles.container}>
+            <ScrollView showsVerticalScrollIndicator={false}>
+                <LinearGradient
+                    colors={['#14B8A6', '#0D9488']}
+                    style={styles.header}
+                >
+                    <SafeAreaView>
+                        <View style={styles.navBar}>
+                            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                                <ChevronLeft size={24} color="white" />
+                            </TouchableOpacity>
+                        </View>
+                    </SafeAreaView>
+
+                    <View style={styles.headerContent}>
+                        <View style={styles.iconContainer}>
+                            <Crown size={48} color="#FBBF24" fill="#FBBF24" />
+                        </View>
+                        <Text style={styles.title}>Glow AI Premium</Text>
+                        <Text style={styles.subtitle}>Unlock your best skin ever</Text>
+                    </View>
+                </LinearGradient>
+
+                <View style={styles.content}>
+                    <View style={styles.featuresCard}>
+                        {features.map((feature, index) => (
+                            <View key={index} style={styles.featureItem}>
+                                <View style={styles.featureIcon}>
+                                    <feature.icon size={20} color="#0D9488" />
+                                </View>
+                                <Text style={styles.featureText}>{feature.text}</Text>
+                            </View>
+                        ))}
+                    </View>
+
+                    <View style={styles.pricingContainer}>
+                        <TouchableOpacity style={styles.planCard}>
+                            <View style={styles.planHeader}>
+                                <Text style={styles.planDuration}>Monthly</Text>
+                                <View style={styles.badge}>
+                                    <Text style={styles.badgeText}>POPULAR</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.price}>$9.99<Text style={styles.perMonth}>/mo</Text></Text>
+                            <Text style={styles.trialText}>3-day free trial, then $9.99/mo</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={[styles.planCard, styles.yearlyPlan]}>
+                            <View style={styles.planHeader}>
+                                <Text style={styles.planDuration}>Yearly</Text>
+                                <View style={[styles.badge, styles.saveBadge]}>
+                                    <Text style={styles.badgeText}>SAVE 20%</Text>
+                                </View>
+                            </View>
+                            <Text style={styles.price}>$99.99<Text style={styles.perMonth}>/yr</Text></Text>
+                            <Text style={styles.trialText}>Equals $8.33/mo</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </ScrollView>
+
+            <View style={styles.footer}>
+                <TouchableOpacity style={styles.subscribeButton}>
+                    <LinearGradient
+                        colors={['#FBBF24', '#D97706']}
+                        style={styles.gradientButton}
+                    >
+                        <Text style={styles.buttonText}>Start Free Trial</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+                <Text style={styles.footerText}>Cancel anytime. Terms apply.</Text>
+            </View>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#FAF7F5',
+    },
+    header: {
+        paddingBottom: 40,
+        borderBottomLeftRadius: 40,
+        borderBottomRightRadius: 40,
+    },
+    navBar: {
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    headerContent: {
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    iconContainer: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: 'white',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 16,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 6,
+    },
+    title: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: 'white',
+        marginBottom: 8,
+    },
+    subtitle: {
+        fontSize: 16,
+        color: 'rgba(255,255,255,0.9)',
+    },
+    content: {
+        padding: 24,
+        marginTop: -30,
+    },
+    featuresCard: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 4,
+        marginBottom: 24,
+    },
+    featureItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+        gap: 12,
+    },
+    featureIcon: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: '#F0FDFA',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    featureText: {
+        fontSize: 15,
+        color: '#374151',
+        fontWeight: '500',
+    },
+    pricingContainer: {
+        gap: 16,
+    },
+    planCard: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 20,
+        borderWidth: 2,
+        borderColor: '#14B8A6',
+        position: 'relative',
+    },
+    yearlyPlan: {
+        borderColor: '#E5E7EB',
+    },
+    planHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 8,
+    },
+    planDuration: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1F2937',
+    },
+    badge: {
+        backgroundColor: '#14B8A6',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: 8,
+    },
+    saveBadge: {
+        backgroundColor: '#10B981',
+    },
+    badgeText: {
+        color: 'white',
+        fontSize: 10,
+        fontWeight: 'bold',
+    },
+    price: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#1F2937',
+        alignItems: 'flex-end',
+    },
+    perMonth: {
+        fontSize: 14,
+        color: '#6B7280',
+        fontWeight: 'normal',
+    },
+    trialText: {
+        fontSize: 12,
+        color: '#6B7280',
+        marginTop: 4,
+    },
+    footer: {
+        padding: 24,
+        backgroundColor: 'white',
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
+    },
+    subscribeButton: {
+        marginBottom: 12,
+    },
+    gradientButton: {
+        padding: 18,
+        borderRadius: 20,
+        alignItems: 'center',
+    },
+    buttonText: {
+        color: 'white',
+        fontSize: 18,
+        fontWeight: 'bold',
+    },
+    footerText: {
+        textAlign: 'center',
+        fontSize: 12,
+        color: '#9CA3AF',
+    },
+});
