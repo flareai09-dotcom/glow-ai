@@ -29,6 +29,7 @@ import { StatsScreen } from './src/screens/StatsScreen';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { LoginScreen } from './src/screens/LoginScreen';
 import { SignupScreen } from './src/screens/SignupScreen';
+import { GlowyAgent } from './src/components/GlowyAgent';
 
 const Stack = createStackNavigator();
 
@@ -41,43 +42,46 @@ function MainNavigator() {
   }
 
   return (
-    <NavigationContainer>
-      <StatusBar barStyle="dark-content" />
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: '#FAF7F5' }
-        }}
-      >
-        {userToken ? (
-          // Main App Stack
-          <>
-            <Stack.Screen name="Home" component={HomeScreen} />
-            <Stack.Screen name="Camera" component={CameraScreen} />
-            <Stack.Screen name="Analysis" component={AnalysisScreen} />
-            <Stack.Screen name="Paywall" component={PaywallScreen} />
-            <Stack.Screen name="Products" component={ProductRecommendationScreen} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
-            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-            <Stack.Screen name="Premium" component={PremiumScreen} />
-            <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
-            <Stack.Screen name="Help" component={HelpScreen} />
-            <Stack.Screen name="EditRoutine" component={EditRoutineScreen} />
-            <Stack.Screen name="History" component={HistoryScreen} />
-            <Stack.Screen name="AddProduct" component={AddProductScreen} />
-            <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-            <Stack.Screen name="Cart" component={CartScreen} />
-            <Stack.Screen name="Stats" component={StatsScreen} />
-          </>
-        ) : (
-          // Auth Stack
-          <>
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Signup" component={SignupScreen} />
-          </>
-        )}
-      </Stack.Navigator>
-    </NavigationContainer>
+    <View style={{ flex: 1, backgroundColor: '#FAF7F5' }}>
+      <NavigationContainer>
+        <StatusBar barStyle="dark-content" />
+        <Stack.Navigator
+          screenOptions={{
+            headerShown: false,
+            cardStyle: { backgroundColor: '#FAF7F5' }
+          }}
+        >
+          {userToken ? (
+            // Main App Stack
+            <>
+              <Stack.Screen name="Home" component={HomeScreen} />
+              <Stack.Screen name="Camera" component={CameraScreen} />
+              <Stack.Screen name="Analysis" component={AnalysisScreen} />
+              <Stack.Screen name="Paywall" component={PaywallScreen} />
+              <Stack.Screen name="Products" component={ProductRecommendationScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+              <Stack.Screen name="Premium" component={PremiumScreen} />
+              <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
+              <Stack.Screen name="Help" component={HelpScreen} />
+              <Stack.Screen name="EditRoutine" component={EditRoutineScreen} />
+              <Stack.Screen name="History" component={HistoryScreen} />
+              <Stack.Screen name="AddProduct" component={AddProductScreen} />
+              <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+              <Stack.Screen name="Cart" component={CartScreen} />
+              <Stack.Screen name="Stats" component={StatsScreen} />
+            </>
+          ) : (
+            // Auth Stack
+            <>
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Signup" component={SignupScreen} />
+            </>
+          )}
+        </Stack.Navigator>
+      </NavigationContainer>
+      {userToken && <GlowyAgent />}
+    </View>
   );
 }
 

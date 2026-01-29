@@ -15,6 +15,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 interface ProfileScreenProps {
     navigation: any;
@@ -22,6 +23,7 @@ interface ProfileScreenProps {
 
 export function ProfileScreen({ navigation }: ProfileScreenProps) {
     const { isDark, toggleTheme } = useTheme();
+    const { signOut } = useAuth();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
     // Dynamic styles based on theme
@@ -44,7 +46,23 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
         }
     };
 
-    const sections = [
+    interface MenuItem {
+        icon: any;
+        label: string;
+        value: string;
+        type?: 'switch' | 'link';
+        onPress?: () => void;
+        badge?: boolean;
+        switchValue?: boolean;
+        onToggle?: () => void;
+    }
+
+    interface Section {
+        title: string;
+        items: MenuItem[];
+    }
+
+    const sections: Section[] = [
         {
             title: 'Account',
             items: [
@@ -209,7 +227,7 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                     ))}
 
                     {/* Logout */}
-                    <TouchableOpacity style={styles.logoutButton}>
+                    <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
                         <LogOut size={20} color="#EF4444" />
                         <Text style={styles.logoutText}>Log Out</Text>
                     </TouchableOpacity>
