@@ -1,7 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions, Animated, TextInput, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Image, StyleSheet, Dimensions, Animated, TextInput, KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator } from 'react-native';
 import { X, Send, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../context/AuthContext';
+import { chatService } from '../services/chat-service';
 
 const { width, height } = Dimensions.get('window');
 
@@ -12,8 +14,10 @@ type Message = {
 };
 
 export const GlowyAgent = () => {
+    const { user } = useAuth();
     const [isOpen, setIsOpen] = useState(false);
     const [input, setInput] = useState('');
+    const [loading, setLoading] = useState(false);
     const [messages, setMessages] = useState<Message[]>([
         { id: '1', text: "Hi! I'm Glowy 🐰. How can I help you with your skin today?", sender: 'glowy' }
     ]);
@@ -55,22 +59,34 @@ export const GlowyAgent = () => {
         }
     };
 
-    const handleSend = () => {
-        if (!input.trim()) return;
+    const handleSend = async () => {
+        if (!input.trim() || !user?.id || loading) return;
 
         const userMsg: Message = { id: Date.now().toString(), text: input, sender: 'user' };
         setMessages(prev => [...prev, userMsg]);
         setInput('');
+        setLoading(true);
 
-        // Simulate AI response
-        setTimeout(() => {
+        try {
+            // Get real AI response
+            const aiResponse = await chatService.sendMessage(input, user.id);
             const glowyMsg: Message = {
                 id: (Date.now() + 1).toString(),
-                text: "I'm just a demo right now, but I think you look great! ✨",
+                text: aiResponse,
                 sender: 'glowy'
             };
             setMessages(prev => [...prev, glowyMsg]);
-        }, 1000);
+        } catch (error) {
+            console.error('Error getting AI response:', error);
+            const errorMsg: Message = {
+                id: (Date.now() + 1).toString(),
+                text: "Sorry, I encountered an error. Please try again! 💫",
+                sender: 'glowy'
+            };
+            setMessages(prev => [...prev, errorMsg]);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -147,13 +163,22 @@ export const GlowyAgent = () => {
                             value={input}
                             onChangeText={setInput}
                             placeholderTextColor="#9CA3AF"
+                            editable={!loading}
                         />
-                        <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+                        <TouchableOpacity
+                            style={styles.sendButton}
+                            onPress={handleSend}
+                            disabled={loading || !input.trim()}
+                        >
                             <LinearGradient
-                                colors={['#14B8A6', '#0D9488']}
+                                colors={loading || !input.trim() ? ['#9CA3AF', '#9CA3AF'] : ['#14B8A6', '#0D9488']}
                                 style={styles.sendGradient}
                             >
-                                <Send color="white" size={20} />
+                                {loading ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Send color="white" size={20} />
+                                )}
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>

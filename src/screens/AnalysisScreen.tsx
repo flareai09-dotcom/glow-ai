@@ -1,31 +1,93 @@
-import React, { useEffect } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, ActivityIndicator } from 'react-native';
 import { ChevronLeft, Lock, TrendingUp, Info } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useHistory } from '../context/HistoryContext';
+import { scanService } from '../services/scan-service';
+import { SkinIssue } from '../types/scan.types';
+import { getScoreCategory } from '../utils/score-calculator';
+import { useAuth } from '../context/AuthContext';
 
 interface AnalysisScreenProps {
     navigation: any;
+    route: any;
 }
 
-const skinIssues = [
-    { name: 'Acne & Breakouts', severity: 68, detected: true },
-    { name: 'Dark Spots', severity: 45, detected: true },
-    { name: 'Uneven Skin Tone', severity: 52, detected: true },
-    { name: 'Fine Lines', severity: 32, detected: true },
-    { name: 'Oiliness', severity: 71, detected: true },
-    { name: 'Dryness', severity: 28, detected: false },
-];
-
-export function AnalysisScreen({ navigation }: AnalysisScreenProps) {
+export function AnalysisScreen({ navigation, route }: AnalysisScreenProps) {
     const { addScanLog } = useHistory();
+    const { user } = useAuth();
+    const [skinScore, setSkinScore] = useState(0);
+    const [skinIssues, setSkinIssues] = useState<SkinIssue[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [scoreCategory, setScoreCategory] = useState({ category: '', description: '', color: '' });
 
     useEffect(() => {
-        // Log the scan result effectively once when screen loads
-        // In a real app, this would happen after API response
-        addScanLog(62, ['Acne & Breakouts', 'Oiliness', 'Uneven Skin Tone']);
+        analyzeSkin();
     }, []);
+
+    const analyzeSkin = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Get image URI from route params
+            const { imageUri } = route.params || {};
+
+            if (!imageUri) {
+                throw new Error('No image provided');
+            }
+
+            if (!user?.id) {
+                throw new Error('User not authenticated');
+            }
+
+            // Create scan with AI analysis
+            const scan = await scanService.createScan(imageUri, user.id);
+
+            // Update state with results
+            setSkinScore(scan.skin_score);
+            setSkinIssues(scan.issues);
+            setScoreCategory(getScoreCategory(scan.skin_score));
+
+            // Log to history
+            const detectedIssues = scan.issues
+                .filter(issue => issue.detected)
+                .map(issue => issue.name);
+            addScanLog(scan.skin_score, detectedIssues);
+
+        } catch (err: any) {
+            console.error('Analysis error:', err);
+            setError(err.message || 'Failed to analyze skin. Please try again.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    if (loading) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <ActivityIndicator size="large" color="#14B8A6" />
+                <Text style={styles.loadingText}>Analyzing your skin...</Text>
+                <Text style={styles.loadingSubtext}>This may take a few seconds</Text>
+            </View>
+        );
+    }
+
+    if (error) {
+        return (
+            <View style={[styles.container, styles.centerContent]}>
+                <Text style={styles.errorText}>⚠️ {error}</Text>
+                <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={styles.retryButton}
+                >
+                    <Text style={styles.retryButtonText}>Go Back</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -49,14 +111,14 @@ export function AnalysisScreen({ navigation }: AnalysisScreenProps) {
                             <View style={styles.scoreHeader}>
                                 <View>
                                     <Text style={styles.scoreLabel}>Your Skin Score</Text>
-                                    <Text style={styles.scoreValue}>62</Text>
+                                    <Text style={styles.scoreValue}>{skinScore}</Text>
                                 </View>
                                 <View style={styles.scoreBadge}>
                                     <TrendingUp size={40} color="white" />
                                 </View>
                             </View>
                             <Text style={styles.scoreDescription}>
-                                Fair skin health. Improvement possible with consistent care.
+                                {scoreCategory.description}
                             </Text>
                         </LinearGradient>
                     </Animatable.View>
@@ -373,5 +435,39 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#6B7280',
         marginTop: 12,
+    },
+    centerContent: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    loadingText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1F2937',
+        marginTop: 16,
+    },
+    loadingSubtext: {
+        fontSize: 14,
+        color: '#6B7280',
+        marginTop: 8,
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#EF4444',
+        textAlign: 'center',
+        marginBottom: 24,
+    },
+    retryButton: {
+        backgroundColor: '#14B8A6',
+        paddingHorizontal: 32,
+        paddingVertical: 16,
+        borderRadius: 12,
+    },
+    retryButtonText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
     },
 });

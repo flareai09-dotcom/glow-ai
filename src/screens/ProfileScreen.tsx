@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, ActivityIndicator } from 'react-native';
 import {
     ChevronLeft,
     User,
@@ -16,6 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { profileService, UserProfile } from '../services/profile-service';
 
 interface ProfileScreenProps {
     navigation: any;
@@ -23,8 +24,34 @@ interface ProfileScreenProps {
 
 export function ProfileScreen({ navigation }: ProfileScreenProps) {
     const { isDark, toggleTheme } = useTheme();
-    const { signOut } = useAuth();
+    const { user, signOut } = useAuth();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [stats, setStats] = useState({ scanCount: 0, lastScore: 0, streak: 0 });
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (user?.id) {
+            loadProfileData();
+        }
+    }, [user]);
+
+    const loadProfileData = async () => {
+        try {
+            setLoading(true);
+            const [profileData, statsData] = await Promise.all([
+                profileService.getProfile(user!.id),
+                profileService.getStats(user!.id)
+            ]);
+
+            if (profileData) setProfile(profileData);
+            setStats(statsData);
+        } catch (error) {
+            console.error('Error loading profile data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // Dynamic styles based on theme
     const themeStyles = {
@@ -45,6 +72,10 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
             borderBottomColor: isDark ? '#374151' : '#F3F4F6',
         }
     };
+
+    const joinedDate = profile?.created_at
+        ? new Date(profile.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        : 'Jan 2025';
 
     interface MenuItem {
         icon: any;
@@ -69,20 +100,20 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                 {
                     icon: User,
                     label: 'Edit Profile',
-                    value: 'Priya Sharma',
+                    value: profile?.full_name || 'Guest User',
                     onPress: () => navigation.navigate('EditProfile')
                 },
                 {
                     icon: Crown,
                     label: 'Premium Status',
-                    value: 'Active',
-                    badge: true,
+                    value: 'Free Plan',
+                    badge: false, // Default to false for now
                     onPress: () => navigation.navigate('Premium')
                 },
                 {
                     icon: Calendar,
                     label: 'Joined',
-                    value: 'Dec 2024',
+                    value: joinedDate,
                     onPress: () => { }
                 },
             ],
@@ -127,6 +158,14 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
         },
     ];
 
+    if (loading) {
+        return (
+            <View style={[styles.container, themeStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
+                <ActivityIndicator size="large" color="#14B8A6" />
+            </View>
+        );
+    }
+
     return (
         <View style={[styles.container, themeStyles.container]}>
             <ScrollView style={styles.flex1} showsVerticalScrollIndicator={false}>
@@ -145,17 +184,17 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                             <Text style={styles.avatarEmoji}>👩🏻</Text>
                         </View>
                         <View style={styles.flex1}>
-                            <Text style={styles.profileName}>Priya Sharma</Text>
-                            <Text style={styles.profileEmail}>priya.sharma@email.com</Text>
+                            <Text style={styles.profileName}>{profile?.full_name || 'Guest User'}</Text>
+                            <Text style={styles.profileEmail}>{profile?.email || user?.email}</Text>
                         </View>
                     </View>
 
                     {/* Stats */}
                     <View style={styles.statsRow}>
                         {[
-                            { label: 'Skin Score', val: '78' },
-                            { label: 'Scans Done', val: '12' },
-                            { label: 'Day Streak', val: '45' },
+                            { label: 'Skin Score', val: stats.lastScore || '--' },
+                            { label: 'Scans Done', val: stats.scanCount },
+                            { label: 'Day Streak', val: stats.streak },
                         ].map((stat, i) => (
                             <View key={i} style={styles.statItem}>
                                 <Text style={styles.statValue}>{stat.val}</Text>

@@ -1,10 +1,15 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { Sun, Moon, TrendingUp, Calendar, Droplet, Flame, Camera, ShoppingBag, User, Edit2 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useRoutine } from '../context/RoutineContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { scanService } from '../services/scan-service';
+import { getScoreCategory } from '../utils/score-calculator';
+
+import { profileService } from '../services/profile-service';
 
 const { width } = Dimensions.get('window');
 
@@ -12,23 +17,57 @@ interface HomeScreenProps {
     navigation: any;
 }
 
-const weeklyProgress = [
-    { day: 'Mon', score: 65 },
-    { day: 'Tue', score: 68 },
-    { day: 'Wed', score: 64 },
-    { day: 'Thu', score: 70 },
-    { day: 'Fri', score: 72 },
-    { day: 'Sat', score: 75 },
-    { day: 'Sun', score: 78 },
-];
-
 export function HomeScreen({ navigation }: HomeScreenProps) {
     const { isDark } = useTheme();
+    const { user } = useAuth();
     const { morningTasks, nightTasks, toggleTask } = useRoutine();
     const currentHour = new Date().getHours();
     const [activeTab, setActiveTab] = React.useState<'morning' | 'night'>(
         currentHour >= 18 ? 'night' : 'morning'
     );
+
+    // Real skin score data from database
+    const [skinScore, setSkinScore] = useState(0);
+    const [userName, setUserName] = useState('Guest');
+    const [weeklyProgress, setWeeklyProgress] = useState<{ day: string; score: number }[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        loadData();
+    }, [user]);
+
+    const loadData = async () => {
+        if (!user?.id) {
+            setLoading(false);
+            return;
+        }
+
+        try {
+            setLoading(true);
+
+            // Load profile for name
+            const profile = await profileService.getProfile(user.id);
+            if (profile?.full_name) {
+                setUserName(profile.full_name.split(' ')[0]); // Get first name
+            } else {
+                setUserName(user.email?.split('@')[0] || 'Guest');
+            }
+
+            // Load latest skin score
+            const latestScan = await scanService.getLatestScan(user.id);
+            if (latestScan) {
+                setSkinScore(latestScan.skin_score);
+            }
+
+            // Load weekly progress
+            const weeklyScores = await scanService.getWeeklyScores(user.id, 7);
+            setWeeklyProgress(weeklyScores);
+        } catch (error) {
+            console.error('Error loading home data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const tasks = activeTab === 'morning' ? morningTasks : nightTasks;
 
@@ -51,7 +90,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                         <View style={styles.headerRow}>
                             <View>
                                 <Text style={styles.welcomeText}>Welcome back,</Text>
-                                <Text style={styles.userName}>Priya ✨</Text>
+                                <Text style={styles.userName}>{userName} ✨</Text>
                             </View>
                             <TouchableOpacity
                                 onPress={() => navigation.navigate('Profile')}
@@ -71,11 +110,13 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                                 <View>
                                     <Text style={styles.scoreLabel}>Current Skin Score</Text>
                                     <View style={styles.scoreValueRow}>
-                                        <Text style={styles.scoreValue}>78</Text>
-                                        <View style={styles.scoreTrend}>
-                                            <TrendingUp size={16} color="#AEF3E1" />
-                                            <Text style={styles.trendText}>+16 this week</Text>
-                                        </View>
+                                        <Text style={styles.scoreValue}>{skinScore || '--'}</Text>
+                                        {skinScore > 0 && (
+                                            <View style={styles.scoreTrend}>
+                                                <TrendingUp size={16} color="#AEF3E1" />
+                                                <Text style={styles.trendText}>{getScoreCategory(skinScore).category}</Text>
+                                            </View>
+                                        )}
                                     </View>
                                 </View>
                                 <View style={styles.congratsBadge}>
@@ -83,7 +124,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                                 </View>
                             </View>
                             <View style={styles.progressBarBg}>
-                                <View style={[styles.progressBarFill, { width: '78%' }]} />
+                                <View style={[styles.progressBarFill, { width: `${skinScore || 0}%` }]} />
                             </View>
                         </Animatable.View>
                     </LinearGradient>

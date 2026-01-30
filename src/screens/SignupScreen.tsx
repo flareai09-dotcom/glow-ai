@@ -35,12 +35,11 @@ export function SignupScreen({ navigation }: { navigation: any }) {
         setLoading(false);
 
         if (success) {
-            // Supabase allows auto-login if email confirmation is disabled.
-            // If enabled, they need to check email.
+            // Auth state will automatically navigate to Home screen
+            // No manual navigation needed
             Alert.alert(
                 'Account Created',
-                'Your account has been created successfully! You can now log in.',
-                [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+                'Your account has been created successfully!'
             );
         }
     };
