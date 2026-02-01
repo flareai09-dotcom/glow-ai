@@ -5,12 +5,16 @@ import { Camera as CameraIcon, Upload, AlertCircle, ChevronLeft, Zap, ZapOff, Ro
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import * as ImagePicker from 'expo-image-picker';
+import { useAuth } from '../context/AuthContext';
+import { profileService } from '../services/profile-service';
+import { scanService } from '../services/scan-service';
 
 interface CameraScreenProps {
     navigation: any;
 }
 
 export function CameraScreen({ navigation }: CameraScreenProps) {
+    const { user } = useAuth();
     const [permission, requestPermission] = useCameraPermissions();
     const [cameraRef, setCameraRef] = useState<CameraView | null>(null);
     const [facing, setFacing] = useState<'front' | 'back'>('front');
@@ -37,7 +41,38 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
         try {
             const photo = await cameraRef.takePictureAsync();
             if (photo) {
-                navigation.navigate('Analysis', { imageUri: photo.uri });
+                if (!user?.id) return;
+
+                // Check Scan Limit
+                try {
+                    const [profile, scanCount] = await Promise.all([
+                        profileService.getProfile(user.id),
+                        scanService.getScanCount(user.id)
+                    ]);
+
+                    if (!profile?.is_premium && scanCount >= 1) {
+                        Alert.alert(
+                            "Free Scan Limit Reached",
+                            "You have used your 1 free scan. Upgrade to Premium for unlimited scans and detailed remedies!",
+                            [
+                                { text: "Cancel", style: "cancel" },
+                                { text: "Upgrade Now", onPress: () => navigation.navigate("Paywall") }
+                            ]
+                        );
+                        return;
+                    }
+                    navigation.navigate('Analysis', { imageUri: photo.uri });
+                } catch (e) {
+                    console.error("Error checking limits", e);
+                    // Allow to proceed if check fails? Or block? Better block to be safe or allow?
+                    // Let's allow for now to avoid blocking on network error, or block? 
+                    // Safe default: allow but log error. Actually for paywall, maybe block. 
+                    // Let's just proceed to Analysis with image, let Analysis handle it? 
+                    // No, Analysis creates scan.
+                    // On network error let's just proceed, Analysis matches this logic? No Analysis doesn't check limit.
+                    // I'll proceed for now.
+                    navigation.navigate('Analysis', { imageUri: photo.uri });
+                }
             }
         } catch (error) {
             Alert.alert("Error", "Failed to take photo");
@@ -55,7 +90,31 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
         });
 
         if (!result.canceled) {
-            navigation.navigate('Analysis', { imageUri: result.assets[0].uri });
+            if (!user?.id) return;
+
+            // Check Scan Limit
+            try {
+                const [profile, scanCount] = await Promise.all([
+                    profileService.getProfile(user.id),
+                    scanService.getScanCount(user.id)
+                ]);
+
+                if (!profile?.is_premium && scanCount >= 1) {
+                    Alert.alert(
+                        "Free Scan Limit Reached",
+                        "You have used your 1 free scan. Upgrade to Premium for unlimited scans and detailed remedies!",
+                        [
+                            { text: "Cancel", style: "cancel" },
+                            { text: "Upgrade Now", onPress: () => navigation.navigate("Paywall") }
+                        ]
+                    );
+                    return;
+                }
+                navigation.navigate('Analysis', { imageUri: result.assets[0].uri });
+            } catch (e) {
+                console.error("Error checking limits", e);
+                navigation.navigate('Analysis', { imageUri: result.assets[0].uri });
+            }
         }
     };
 

@@ -31,6 +31,7 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { SignupScreen } from './src/screens/SignupScreen';
 import { GlowyAgent } from './src/components/GlowyAgent';
 import { ChatScreen } from './src/screens/ChatScreen';
+import { ReferralScreen } from './src/screens/ReferralScreen';
 
 const Stack = createStackNavigator();
 
@@ -71,6 +72,7 @@ function MainNavigator() {
               <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
               <Stack.Screen name="Cart" component={CartScreen} />
               <Stack.Screen name="Stats" component={StatsScreen} />
+              <Stack.Screen name="Referral" component={ReferralScreen} />
               <Stack.Screen name="Chat" component={ChatScreen} />
             </>
           ) : (

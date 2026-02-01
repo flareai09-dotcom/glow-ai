@@ -1,3 +1,4 @@
+import { aiService } from './ai-service';
 import { supabase } from '../lib/supabase';
 import { ChatMessage, ChatRequest, ChatResponse } from '../types/chat.types';
 
@@ -12,40 +13,11 @@ export class ChatService {
      */
     async sendMessage(message: string, userId: string): Promise<string> {
         try {
-            // Get recent chat history for context
-            const chatHistory = await this.getChatHistory(userId, 10);
+            console.log('💬 Sending message to AI (Client-Side)...');
 
-            console.log('💬 Sending message to AI...');
-
-            // Get current session for auth token
-            const { data: { session } } = await supabase.auth.getSession();
-
-            if (!session) {
-                throw new Error('No active session');
-            }
-
-            // Call Edge Function with auth headers
-            const { data, error } = await supabase.functions.invoke<ChatResponse>('chat-assistant', {
-                body: {
-                    message,
-                    chatHistory
-                },
-                headers: {
-                    Authorization: `Bearer ${session.access_token}`,
-                },
-            });
-
-            if (error) {
-                console.error('❌ Chat error:', error);
-                throw error;
-            }
-
-            if (!data || !data.success) {
-                throw new Error('Failed to get AI response');
-            }
-
-            console.log('✅ AI response received');
-            return data.response;
+            // Use the robust Client-Side AI Service
+            // This ensures we use the same working keys and models as the scanner
+            return await aiService.chat(message);
 
         } catch (error: any) {
             console.error('❌ Error sending message:', error);

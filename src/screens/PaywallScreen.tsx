@@ -26,8 +26,8 @@ const features = [
     },
     {
         icon: Zap,
-        title: 'Personalized Routines',
-        description: 'Morning & night skincare schedules',
+        title: 'Free Original Remedies',
+        description: 'Dermatologist-verified home treatments',
     },
 ];
 

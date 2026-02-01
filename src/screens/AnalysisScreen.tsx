@@ -5,6 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useHistory } from '../context/HistoryContext';
 import { scanService } from '../services/scan-service';
+import { profileService } from '../services/profile-service';
 import { SkinIssue } from '../types/scan.types';
 import { getScoreCategory } from '../utils/score-calculator';
 import { useAuth } from '../context/AuthContext';
@@ -17,11 +18,13 @@ interface AnalysisScreenProps {
 export function AnalysisScreen({ navigation, route }: AnalysisScreenProps) {
     const { addScanLog } = useHistory();
     const { user } = useAuth();
+    const [scan, setScan] = useState<any>(null);
     const [skinScore, setSkinScore] = useState(0);
     const [skinIssues, setSkinIssues] = useState<SkinIssue[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [scoreCategory, setScoreCategory] = useState({ category: '', description: '', color: '' });
+    const [isPremium, setIsPremium] = useState(false);
 
     useEffect(() => {
         analyzeSkin();
@@ -43,10 +46,16 @@ export function AnalysisScreen({ navigation, route }: AnalysisScreenProps) {
                 throw new Error('User not authenticated');
             }
 
-            // Create scan with AI analysis
-            const scan = await scanService.createScan(imageUri, user.id);
+            // Fetch Profile (for Premium Status) & Create Scan in parallel
+            const [profile, scan] = await Promise.all([
+                profileService.getProfile(user.id),
+                scanService.createScan(imageUri, user.id)
+            ]);
+
+            setIsPremium(!!profile?.is_premium);
 
             // Update state with results
+            setScan(scan);
             setSkinScore(scan.skin_score);
             setSkinIssues(scan.issues);
             setScoreCategory(getScoreCategory(scan.skin_score));
@@ -134,6 +143,53 @@ export function AnalysisScreen({ navigation, route }: AnalysisScreenProps) {
                         </View>
                     </Animatable.View>
 
+                    {/* Actionable Remedies Section (Premium Locked) */}
+                    <View style={styles.issuesSection}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>Actionable Remedies</Text>
+                            {!isPremium && <Lock size={16} color="#D97706" />}
+                        </View>
+
+                        {/* If Premium: Show Real Remedies */}
+                        {isPremium ? (
+                            <View style={styles.remediesList}>
+                                {scan.remedies && scan.remedies.length > 0 ? (
+                                    scan.remedies.map((remedy: string, index: number) => (
+                                        <View key={index} style={styles.remedyCard}>
+                                            <View style={styles.remedyNumber}>
+                                                <Text style={styles.remedyNumberText}>{index + 1}</Text>
+                                            </View>
+                                            <Text style={styles.remedyTextActive}>{remedy}</Text>
+                                        </View>
+                                    ))
+                                ) : (
+                                    <Text style={styles.noRemediesText}>No specific remedies found for this scan.</Text>
+                                )}
+                            </View>
+                        ) : (
+                            /* If Free: Show Blurred Placeholders */
+                            <View style={styles.blurredContainer}>
+                                <View style={styles.remedyCardBlurred}>
+                                    <Text style={styles.remedyTextBlurred}>Use a gentle cleanser with Salicylic Acid to unclog pores...</Text>
+                                </View>
+                                <View style={styles.remedyCardBlurred}>
+                                    <Text style={styles.remedyTextBlurred}>Apply Niacinamide serum to reduce inflammation...</Text>
+                                </View>
+                                <View style={styles.remedyCardBlurred}>
+                                    <Text style={styles.remedyTextBlurred}>Consider using a lightweight, oil-free moisturizer...</Text>
+                                </View>
+
+                                <View style={styles.blurOverlay}>
+                                    <View style={styles.lockCircle}>
+                                        <Lock size={24} color="white" />
+                                    </View>
+                                    <Text style={styles.unlockText}>Unlock Personalized Remedies</Text>
+                                    <Text style={styles.unlockSubtext}>Get dermatologist-grade advice for YOUR skin</Text>
+                                </View>
+                            </View>
+                        )}
+                    </View>
+
                     {/* Detected Issues */}
                     <View style={styles.issuesSection}>
                         <Text style={styles.sectionTitle}>Detected Concerns</Text>
@@ -161,23 +217,10 @@ export function AnalysisScreen({ navigation, route }: AnalysisScreenProps) {
                                     <Text style={styles.severityValue}>{issue.severity}%</Text>
                                 </View>
 
-                                {/* Progress bar with blur */}
+                                {/* Progress bar */}
                                 <View style={styles.progressContainer}>
                                     <View style={styles.progressBar}>
                                         <View style={[styles.progressFill, { width: `${issue.severity}%` }]} />
-                                    </View>
-                                    <View style={styles.blurOverlay}>
-                                        <Lock size={16} color="#9CA3AF" />
-                                    </View>
-                                </View>
-
-                                {/* Blurred remedy */}
-                                <View style={styles.remedyContainer}>
-                                    <Text style={styles.remedyText}>
-                                        Use gentle cleansers with salicylic acid. Apply niacinamide serum...
-                                    </Text>
-                                    <View style={styles.remedyLock}>
-                                        <Lock size={12} color="#9CA3AF" />
                                     </View>
                                 </View>
                             </Animatable.View>
@@ -469,5 +512,96 @@ const styles = StyleSheet.create({
         color: 'white',
         fontSize: 16,
         fontWeight: 'bold',
+    },
+    // Remedies Styles
+    sectionHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 16,
+        marginTop: 8,
+    },
+    remediesList: {
+        gap: 12,
+        marginBottom: 24,
+    },
+    remedyCard: {
+        backgroundColor: 'white',
+        padding: 16,
+        borderRadius: 16,
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'flex-start',
+        borderLeftWidth: 4,
+        borderLeftColor: '#14B8A6',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.05,
+        shadowRadius: 2,
+        elevation: 1,
+    },
+    remedyNumber: {
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#F0FDFA',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    remedyNumberText: {
+        color: '#14B8A6',
+        fontWeight: 'bold',
+        fontSize: 12,
+    },
+    remedyTextActive: {
+        flex: 1,
+        fontSize: 14,
+        color: '#374151',
+        lineHeight: 20,
+    },
+    noRemediesText: {
+        fontStyle: 'italic',
+        color: '#6B7280',
+        textAlign: 'center',
+    },
+    blurredContainer: {
+        position: 'relative',
+        gap: 12,
+        marginBottom: 24,
+    },
+    remedyCardBlurred: {
+        backgroundColor: 'white',
+        padding: 16,
+        borderRadius: 16,
+        opacity: 0.5,
+    },
+    remedyTextBlurred: {
+        color: '#9CA3AF',
+        fontSize: 14,
+        filter: 'blur(4px)', // Note: React Native needs prop extraction for real blur, but opacity helps simulation
+    },
+    lockCircle: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        backgroundColor: '#D97706',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 8,
+        shadowColor: '#D97706',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+        elevation: 4,
+    },
+    unlockText: {
+        color: '#1F2937',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    unlockSubtext: {
+        color: '#4B5563',
+        fontSize: 12,
+        marginTop: 4,
     },
 });

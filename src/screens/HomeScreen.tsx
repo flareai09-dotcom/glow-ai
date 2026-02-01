@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
-import { Sun, Moon, TrendingUp, Calendar, Droplet, Flame, Camera, ShoppingBag, User, Edit2 } from 'lucide-react-native';
+import { Sun, Moon, TrendingUp, Calendar, Droplet, Flame, Camera, ShoppingBag, User, Edit2, Crown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useRoutine } from '../context/RoutineContext';
@@ -8,9 +8,7 @@ import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { scanService } from '../services/scan-service';
 import { getScoreCategory } from '../utils/score-calculator';
-
 import { profileService } from '../services/profile-service';
-
 const { width } = Dimensions.get('window');
 
 interface HomeScreenProps {
@@ -27,9 +25,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     );
 
     // Real skin score data from database
+    // Real skin score data from database
     const [skinScore, setSkinScore] = useState(0);
     const [userName, setUserName] = useState('Guest');
     const [weeklyProgress, setWeeklyProgress] = useState<{ day: string; score: number }[]>([]);
+    const [premiumCount, setPremiumCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -62,6 +62,10 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             // Load weekly progress
             const weeklyScores = await scanService.getWeeklyScores(user.id, 7);
             setWeeklyProgress(weeklyScores);
+
+            // Load premium count
+            const count = await profileService.getPremiumUserCount();
+            setPremiumCount(count);
         } catch (error) {
             console.error('Error loading home data:', error);
         } finally {
@@ -91,12 +95,23 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                             <View>
                                 <Text style={styles.welcomeText}>Welcome back,</Text>
                                 <Text style={styles.userName}>{userName} ✨</Text>
+                                <View style={styles.premiumBadgeContainer}>
+                                    <Crown size={14} color="#FFD700" fill="#FFD700" />
+                                    <Text style={styles.premiumCountText}>{premiumCount.toLocaleString()} Premium Members</Text>
+                                </View>
                             </View>
                             <TouchableOpacity
-                                onPress={() => navigation.navigate('Profile')}
-                                style={styles.profileButton}
+                                onPress={() => navigation.navigate('Premium')}
+                                style={styles.premiumButton}
                             >
-                                <User size={24} color="white" />
+                                <LinearGradient
+                                    colors={['#FFD700', '#F59E0B', '#B45309']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.premiumGradient}
+                                >
+                                    <Crown size={24} color="white" fill="white" />
+                                </LinearGradient>
                             </TouchableOpacity>
                         </View>
 
@@ -326,6 +341,43 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255, 255, 255, 0.2)',
         alignItems: 'center',
         justifyContent: 'center',
+    },
+    premiumButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        overflow: 'hidden',
+        elevation: 8,
+        shadowColor: '#FFD700',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.5)',
+    },
+    premiumGradient: {
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    premiumBadgeContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 12,
+        marginTop: 8,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: 'rgba(255, 215, 0, 0.3)',
+    },
+    premiumCountText: {
+        color: '#FFD700',
+        fontSize: 12,
+        fontWeight: 'bold',
+        marginLeft: 6,
     },
     scoreCard: {
         backgroundColor: 'rgba(255, 255, 255, 0.1)',

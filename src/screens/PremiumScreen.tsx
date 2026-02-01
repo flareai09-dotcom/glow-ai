@@ -1,9 +1,12 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Dimensions, Alert, ActivityIndicator, Modal } from 'react-native';
+import { WebView } from 'react-native-webview';
 import { ChevronLeft, Check, Crown, Star, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '../context/AuthContext';
+import { profileService } from '../services/profile-service';
 
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const features = [
     { icon: Star, text: 'Unlimited Skin Analysis' },
@@ -13,8 +16,121 @@ const features = [
 ];
 
 export function PremiumScreen({ navigation }: { navigation: any }) {
+    const { user } = useAuth();
+    const [loading, setLoading] = useState(false);
+    const [showGateway, setShowGateway] = useState(false);
+
+    const confirmSubscription = async (paymentId: string) => {
+        try {
+            const success = await profileService.updateProfile(user.id, { is_premium: true });
+
+            if (success) {
+                Alert.alert(
+                    'Payment Successful! 🌟',
+                    `You are now a Premium Member.\nReference: ${paymentId}`,
+                    [{ text: 'Awesome!', onPress: () => navigation.goBack() }]
+                );
+            } else {
+                throw new Error('Failed to update profile');
+            }
+        } catch (error) {
+            console.error("Error confirming subscription:", error);
+            Alert.alert('Error', 'Failed to update your premium status. Please contact support.');
+        }
+    };
+
+    const handleSubscribe = async () => {
+        if (!user) {
+            Alert.alert('Error', 'You must be logged in to subscribe.');
+            return;
+        }
+        setShowGateway(true);
+    };
+
+    const onMessage = (event: any) => {
+        const data = JSON.parse(event.nativeEvent.data);
+        if (data.status === 'success') {
+            setShowGateway(false);
+            confirmSubscription(data.data.razorpay_payment_id);
+        } else if (data.status === 'failed') {
+            setShowGateway(false);
+            Alert.alert('Payment Failed', data.data.description || 'Transaction failed');
+        } else if (data.status === 'closed') {
+            setShowGateway(false);
+        }
+    };
+
+    const RazorpayHTML = `
+        <html>
+        <head>
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <style>
+                body { display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background-color: #FAF7F5; }
+            </style>
+        </head>
+        <body>
+            <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+            <script>
+                var options = {
+                    "key": "rzp_live_SAtrBlIp6RH1XK", 
+                    "amount": "9900", 
+                    "currency": "INR",
+                    "name": "Glow AI Premium",
+                    "description": "Lifetime Access Plan",
+                    "image": "https://i.imgur.com/7XqWt0G.png", 
+                    "handler": function (response){
+                        window.ReactNativeWebView.postMessage(JSON.stringify({status: 'success', data: response}));
+                    },
+                    "prefill": {
+                        "email": "${user?.email || ''}",
+                        "contact": ""
+                    },
+                    "theme": {
+                        "color": "#14B8A6"
+                    },
+                    "modal": {
+                        "ondismiss": function(){
+                            window.ReactNativeWebView.postMessage(JSON.stringify({status: 'closed'}));
+                        }
+                    }
+                };
+                var rzp1 = new Razorpay(options);
+                rzp1.on('payment.failed', function (response){
+                    window.ReactNativeWebView.postMessage(JSON.stringify({status: 'failed', data: response.error}));
+                });
+                // Open automatically
+                document.addEventListener("DOMContentLoaded", function() {
+                    rzp1.open();
+                });
+            </script>
+        </body>
+        </html>
+    `;
+
     return (
         <View style={styles.container}>
+            <Modal
+                visible={showGateway}
+                onRequestClose={() => setShowGateway(false)}
+                animationType={"slide"}
+                transparent={false}
+            >
+                <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+                    <View style={styles.modalHeader}>
+                        <TouchableOpacity onPress={() => setShowGateway(false)} style={styles.closeButton}>
+                            <Text style={styles.closeButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                        <Text style={styles.modalTitle}>Secure Payment</Text>
+                    </View>
+                    <WebView
+                        originWhitelist={['*']}
+                        source={{ html: RazorpayHTML }}
+                        onMessage={onMessage}
+                        style={{ flex: 1 }}
+                    />
+                </SafeAreaView>
+            </Modal>
+
             <ScrollView showsVerticalScrollIndicator={false}>
                 <LinearGradient
                     colors={['#14B8A6', '#0D9488']}
@@ -50,38 +166,35 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
                     </View>
 
                     <View style={styles.pricingContainer}>
-                        <TouchableOpacity style={styles.planCard}>
+                        <TouchableOpacity style={[styles.planCard, styles.activePlan]}>
                             <View style={styles.planHeader}>
-                                <Text style={styles.planDuration}>Monthly</Text>
+                                <Text style={styles.planDuration}>Lifetime Access</Text>
                                 <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>POPULAR</Text>
+                                    <Text style={styles.badgeText}>BEST VALUE</Text>
                                 </View>
                             </View>
-                            <Text style={styles.price}>$9.99<Text style={styles.perMonth}>/mo</Text></Text>
-                            <Text style={styles.trialText}>3-day free trial, then $9.99/mo</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={[styles.planCard, styles.yearlyPlan]}>
-                            <View style={styles.planHeader}>
-                                <Text style={styles.planDuration}>Yearly</Text>
-                                <View style={[styles.badge, styles.saveBadge]}>
-                                    <Text style={styles.badgeText}>SAVE 20%</Text>
-                                </View>
-                            </View>
-                            <Text style={styles.price}>$99.99<Text style={styles.perMonth}>/yr</Text></Text>
-                            <Text style={styles.trialText}>Equals $8.33/mo</Text>
+                            <Text style={styles.price}>₹99<Text style={styles.perMonth}>/one-time</Text></Text>
+                            <Text style={styles.trialText}>Unlock all premium features forever</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </ScrollView>
 
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.subscribeButton}>
+                <TouchableOpacity
+                    style={styles.subscribeButton}
+                    onPress={handleSubscribe}
+                    disabled={loading}
+                >
                     <LinearGradient
                         colors={['#FBBF24', '#D97706']}
                         style={styles.gradientButton}
                     >
-                        <Text style={styles.buttonText}>Start Free Trial</Text>
+                        {loading ? (
+                            <ActivityIndicator color="white" />
+                        ) : (
+                            <Text style={styles.buttonText}>Pay ₹99</Text>
+                        )}
                     </LinearGradient>
                 </TouchableOpacity>
                 <Text style={styles.footerText}>Cancel anytime. Terms apply.</Text>
@@ -94,6 +207,28 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#FAF7F5',
+    },
+    modalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: '#E5E7EB',
+        justifyContent: 'space-between'
+    },
+    closeButton: {
+        padding: 8,
+    },
+    closeButtonText: {
+        color: '#EF4444',
+        fontSize: 16,
+        fontWeight: '600',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#1F2937',
+        marginRight: 40, // Balance the close button
     },
     header: {
         paddingBottom: 40,
@@ -253,4 +388,13 @@ const styles = StyleSheet.create({
         fontSize: 12,
         color: '#9CA3AF',
     },
+    activePlan: {
+        borderColor: '#14B8A6',
+        backgroundColor: '#F0FDFA',
+        shadowColor: '#14B8A6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 8,
+        elevation: 4,
+    }
 });

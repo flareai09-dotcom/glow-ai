@@ -2,6 +2,7 @@ import { supabase } from '../lib/supabase';
 import { aiService } from './ai-service';
 import { storageService } from './storage-service-base64';
 import { calculateSkinScore } from '../utils/score-calculator';
+import { compressImage } from '../utils/image-utils';
 import { Scan, ScanCreateInput } from '../types/scan.types';
 
 /**
@@ -16,16 +17,20 @@ export class ScanService {
      */
     async createScan(imageUri: string, userId: string): Promise<Scan> {
         try {
+            // Step 0: Optimize image
+            console.log('Compressing image...');
+            const compressedUri = await compressImage(imageUri);
+
             // Step 1: Upload image to storage
             console.log('Uploading image...');
             const { imageUrl, thumbnailUrl } = await storageService.uploadScanImage(
-                imageUri,
+                compressedUri,
                 userId
             );
 
             // Step 2: Analyze skin with AI
             console.log('Analyzing skin with AI...');
-            const analysis = await aiService.analyzeSkin(imageUri);
+            const analysis = await aiService.analyzeSkin(compressedUri);
 
             // Step 3: Calculate skin score
             console.log('Calculating skin score...');
@@ -39,6 +44,7 @@ export class ScanService {
                 thumbnail_url: thumbnailUrl,
                 skin_score: scoreBreakdown.finalScore,
                 issues: analysis.issues,
+                remedies: analysis.remedies,
                 analysis_summary: analysis.summary,
             };
 
@@ -48,13 +54,35 @@ export class ScanService {
                 .select()
                 .single();
 
-            if (error) throw error;
+            if (error) {
+                console.error('Database Insert Error:', error);
+                throw new Error(`Database Error: ${error.message}`);
+            }
 
             console.log('Scan created successfully:', data.id);
             return data as Scan;
+        } catch (error: any) {
+            console.error('Error creating scan step:', error);
+            // Throw the actual error message to help debugging
+            throw new Error(error.message || 'Failed to create scan');
+        }
+    }
+
+    /**
+     * Get user's total scan count
+     */
+    async getScanCount(userId: string): Promise<number> {
+        try {
+            const { count, error } = await supabase
+                .from('scans')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', userId);
+
+            if (error) throw error;
+            return count || 0;
         } catch (error) {
-            console.error('Error creating scan:', error);
-            throw new Error('Failed to create scan. Please try again.');
+            console.error('Error getting scan count:', error);
+            return 0;
         }
     }
 

@@ -1,5 +1,5 @@
 import * as ImageManipulator from 'expo-image-manipulator';
-import * as FileSystem from 'expo-file-system';
+import { readAsStringAsync, getInfoAsync } from 'expo-file-system/legacy';
 
 /**
  * Compress and resize image for upload
@@ -10,8 +10,8 @@ export async function compressImage(uri: string): Promise<string> {
         // Resize to max 1024x1024 while maintaining aspect ratio
         const manipResult = await ImageManipulator.manipulateAsync(
             uri,
-            [{ resize: { width: 1024 } }],
-            { compress: 0.8, format: ImageManipulator.SaveFormat.JPEG }
+            [{ resize: { width: 800 } }],
+            { compress: 0.5, format: ImageManipulator.SaveFormat.JPEG }
         );
 
         return manipResult.uri;
@@ -45,7 +45,7 @@ export async function createThumbnail(uri: string): Promise<string> {
  */
 export async function imageToBase64(uri: string): Promise<string> {
     try {
-        const base64 = await FileSystem.readAsStringAsync(uri, {
+        const base64 = await readAsStringAsync(uri, {
             encoding: 'base64',
         });
         return base64;
@@ -60,7 +60,7 @@ export async function imageToBase64(uri: string): Promise<string> {
  */
 export async function getImageSize(uri: string): Promise<number> {
     try {
-        const info = await FileSystem.getInfoAsync(uri);
+        const info = await getInfoAsync(uri);
         return info.exists && 'size' in info ? info.size : 0;
     } catch (error) {
         console.error('Error getting image size:', error);
@@ -76,7 +76,7 @@ export async function validateImage(uri: string): Promise<{
     error?: string;
 }> {
     try {
-        const info = await FileSystem.getInfoAsync(uri);
+        const info = await getInfoAsync(uri);
 
         if (!info.exists) {
             return { valid: false, error: 'Image file not found' };

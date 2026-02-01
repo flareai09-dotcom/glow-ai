@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Switch, ActivityIndicator } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     ChevronLeft,
     User,
@@ -11,6 +12,7 @@ import {
     Crown,
     Calendar,
     Moon,
+    Gift,
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
@@ -33,8 +35,30 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
     useEffect(() => {
         if (user?.id) {
             loadProfileData();
+            loadPreferences();
         }
     }, [user]);
+
+    const loadPreferences = async () => {
+        try {
+            const storedVal = await AsyncStorage.getItem('notificationsEnabled');
+            if (storedVal !== null) {
+                setNotificationsEnabled(JSON.parse(storedVal));
+            }
+        } catch (e) {
+            console.error('Failed to load preferences', e);
+        }
+    };
+
+    const toggleNotifications = async () => {
+        try {
+            const newVal = !notificationsEnabled;
+            setNotificationsEnabled(newVal);
+            await AsyncStorage.setItem('notificationsEnabled', JSON.stringify(newVal));
+        } catch (e) {
+            console.error('Failed to save preferences', e);
+        }
+    };
 
     const loadProfileData = async () => {
         try {
@@ -106,9 +130,16 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                 {
                     icon: Crown,
                     label: 'Premium Status',
-                    value: 'Free Plan',
-                    badge: false, // Default to false for now
+                    value: profile?.is_premium ? 'Premium Plan' : 'Free Plan',
+                    badge: !!profile?.is_premium,
                     onPress: () => navigation.navigate('Premium')
+                },
+                {
+                    icon: Gift,
+                    label: 'Refer & Earn',
+                    value: 'Get ₹20',
+                    onPress: () => navigation.navigate('Referral'),
+                    badge: true
                 },
                 {
                     icon: Calendar,
@@ -127,7 +158,7 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                     value: notificationsEnabled ? 'On' : 'Off',
                     type: 'switch',
                     switchValue: notificationsEnabled,
-                    onToggle: () => setNotificationsEnabled(!notificationsEnabled)
+                    onToggle: toggleNotifications
                 },
                 {
                     icon: Moon,

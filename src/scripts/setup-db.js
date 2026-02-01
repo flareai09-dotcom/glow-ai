@@ -3,10 +3,10 @@ const { Client } = require('pg');
 const connectionString = 'postgresql://postgres:vXnRN5Tb7T690CKB@db.sdaozejlnkzrkidxjylf.supabase.co:5432/postgres';
 
 const client = new Client({
-    connectionString,
-    ssl: {
-        rejectUnauthorized: false,
-    },
+  connectionString,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 const sql = `
@@ -95,20 +95,68 @@ create trigger on_auth_user_created
 `;
 
 async function run() {
+  try {
+    await client.connect();
+    console.log('Connected to Supabase Postgres...');
+
+    // Split commands by semicolon just in case, or run as single block. 
+    // pg driver supports multiple statements in one query usually.
+    await client.query(sql);
+
+    // --- MIGRATION / REPAIR LOGIC ---
+    console.log('Running migrations to ensure schema correctness...');
+
+    await client.query(`
+            do $$
+            begin
+                -- 1. Fix Profiles: Add is_premium if missing
+                if not exists (select 1 from information_schema.columns where table_name = 'profiles' and column_name = 'is_premium') then
+                    alter table public.profiles add column is_premium boolean default false;
+                end if;
+
+                -- 2. Fix Scans: Rename score to skin_score if needed
+                if exists (select 1 from information_schema.columns where table_name = 'scans' and column_name = 'score') then
+                    alter table public.scans rename column score to skin_score;
+                end if;
+
+                -- 3. Fix Scans: Add thumbnail_url
+                if not exists (select 1 from information_schema.columns where table_name = 'scans' and column_name = 'thumbnail_url') then
+                    alter table public.scans add column thumbnail_url text;
+                end if;
+
+                -- 4. Fix Scans: Add analysis_summary
+                if not exists (select 1 from information_schema.columns where table_name = 'scans' and column_name = 'analysis_summary') then
+                    alter table public.scans add column analysis_summary text;
+                end if;
+            end $$;
+        `);
+
+    // 5. Fix Scans: Change issues to jsonb
+    // Done separately to handle type conversion or errors gracefully
     try {
-        await client.connect();
-        console.log('Connected to Supabase Postgres...');
-
-        // Split commands by semicolon just in case, or run as single block. 
-        // pg driver supports multiple statements in one query usually.
-        await client.query(sql);
-
-        console.log('Successfully created tables and policies!');
-    } catch (err) {
-        console.error('Error executing sql:', err);
-    } finally {
-        await client.end();
+      await client.query(`
+                alter table public.scans alter column issues type jsonb using to_jsonb(issues);
+            `);
+    } catch (e) {
+      console.log('Issues column might already be correct or empty, attempting safe add/drop if needed...');
+      // Fallback: If it's text[] and empty, or if we just want to force it
+      await client.query(`
+                 do $$
+                 begin
+                    if exists (select 1 from information_schema.columns where table_name = 'scans' and column_name = 'issues' and data_type = 'ARRAY') then
+                        alter table public.scans drop column issues;
+                        alter table public.scans add column issues jsonb default '[]'::jsonb;
+                    end if;
+                 end $$;
+            `);
     }
+
+    console.log('Successfully created tables and policies!');
+  } catch (err) {
+    console.error('Error executing sql:', err);
+  } finally {
+    await client.end();
+  }
 }
 
 run();

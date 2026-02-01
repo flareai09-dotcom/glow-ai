@@ -4,6 +4,7 @@ create table public.profiles (
   email text,
   full_name text,
   avatar_url text,
+  is_premium boolean default false,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   primary key (id)
 );
@@ -28,9 +29,11 @@ create policy "Users can update own profile."
 create table public.scans (
   id uuid not null default uuid_generate_v4(),
   user_id uuid not null references auth.users on delete cascade,
-  score integer not null,
-  issues text[] default '{}',
+  skin_score integer not null,
+  issues jsonb default '[]'::jsonb,
   image_url text,
+  thumbnail_url text,
+  analysis_summary text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null,
   primary key (id)
 );
@@ -81,3 +84,36 @@ $$;
 create trigger on_auth_user_created
   after insert on auth.users
   for each row execute procedure public.handle_new_user();
+
+-- REFERRAL SYSTEM SCHEMA (Add these via SQL Editor)
+
+-- 1. Add referral columns to profiles
+alter table public.profiles add column if not exists referral_code text unique;
+alter table public.profiles add column if not exists referred_by uuid references public.profiles(id);
+alter table public.profiles add column if not exists wallet_balance decimal(10, 2) default 0.00;
+alter table public.profiles add column if not exists total_earnings decimal(10, 2) default 0.00;
+
+-- 2. Create withdraw requests table
+create table if not exists public.withdraw_requests (
+  id uuid not null default uuid_generate_v4(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  amount decimal(10, 2) not null,
+  upi_id text not null,
+  status text default 'pending' check (status in ('pending', 'processing', 'completed', 'rejected')),
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  processed_at timestamp with time zone,
+  admin_note text,
+  primary key (id)
+);
+
+-- 3. Enable RLS for withdraw_requests
+alter table public.withdraw_requests enable row level security;
+
+create policy "Users can view own requests"
+  on withdraw_requests for select
+  using ( auth.uid() = user_id );
+
+create policy "Users can create requests"
+  on withdraw_requests for insert
+  with check ( auth.uid() = user_id );
+

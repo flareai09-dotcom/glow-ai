@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabase';
-import * as FileSystem from 'expo-file-system';
+import { readAsStringAsync } from 'expo-file-system/legacy';
 
 /**
  * SIMPLIFIED Storage Service - No Supabase Storage
@@ -20,7 +20,7 @@ export class StorageService {
             console.log('📤 Converting image to base64...');
 
             // Use Expo FileSystem to read as base64
-            const base64 = await FileSystem.readAsStringAsync(imageUri, {
+            const base64 = await readAsStringAsync(imageUri, {
                 encoding: 'base64',
             });
 

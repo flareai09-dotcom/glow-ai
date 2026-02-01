@@ -8,14 +8,17 @@ import { useAuth } from '../context/AuthContext';
 export function SignupScreen({ navigation }: { navigation: any }) {
     const { signUp } = useAuth();
 
+    // ... (imports)
     const [email, setEmail] = useState('');
+    const [fullName, setFullName] = useState('');
     const [password, setPassword] = useState('');
+    // ... (rest of the file)
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const handleSignup = async () => {
-        if (!email || !password || !confirmPassword) {
+        if (!email || !password || !confirmPassword || !fullName) {
             Alert.alert('Error', 'Please fill in all fields.');
             return;
         }
@@ -31,7 +34,7 @@ export function SignupScreen({ navigation }: { navigation: any }) {
         }
 
         setLoading(true);
-        const success = await signUp(email, password);
+        const success = await signUp(email, password, fullName);
         setLoading(false);
 
         if (success) {
@@ -64,6 +67,19 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                         </Animatable.View>
 
                         <Animatable.View animation="fadeInUp" delay={200} style={styles.form}>
+                            {/* Name Input */}
+                            <View style={styles.inputContainer}>
+                                <User size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Full Name"
+                                    placeholderTextColor="#9CA3AF"
+                                    value={fullName}
+                                    onChangeText={setFullName}
+                                    autoCapitalize="words"
+                                />
+                            </View>
+
                             {/* Email Input */}
                             <View style={styles.inputContainer}>
                                 <Mail size={20} color="#9CA3AF" style={styles.inputIcon} />
