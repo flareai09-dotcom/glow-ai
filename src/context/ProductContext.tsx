@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 export interface Product {
     id: string;
@@ -12,175 +14,184 @@ export interface Product {
     benefits: string[];
     image: string;
     affiliateLink: string;
-    description?: string; // Added description
+    description?: string;
 }
 
 interface ProductContextType {
     products: Product[];
     cart: Product[];
-    isAdmin: boolean;
-    toggleAdmin: () => void;
-    addProduct: (product: Omit<Product, 'id' | 'rating' | 'reviews'>) => void;
-    deleteProduct: (id: string) => void;
+    isLoading: boolean;
+    addProduct: (product: Omit<Product, 'id' | 'rating' | 'reviews'>) => Promise<boolean>;
+    deleteProduct: (id: string) => Promise<boolean>;
     addToCart: (product: Product) => void;
     removeFromCart: (productId: string) => void;
     clearCart: () => void;
+    refreshProducts: () => void;
 }
-
-const defaultProducts: Product[] = [
-    {
-        id: '1',
-        name: 'Minimalist Niacinamide 10% Serum',
-        brand: 'Minimalist',
-        price: 349,
-        rating: 4.5,
-        reviews: 12500,
-        category: 'Serum',
-        benefits: ['Dark spots', 'Oil control'],
-        image: 'https://images.unsplash.com/photo-1620917669809-1af0497965de?q=80&w=200',
-        affiliateLink: 'https://beminimalist.co',
-        description: 'A soothing, lightweight serum that reduces acne marks and controls sebum production.',
-    },
-    {
-        id: '2',
-        name: 'Plum Green Tea Face Wash',
-        brand: 'Plum',
-        price: 225,
-        rating: 4.3,
-        reviews: 8900,
-        category: 'Cleanser',
-        benefits: ['Oil control', 'Gentle'],
-        image: 'https://images.unsplash.com/photo-1651740896477-467ea46b4fe5?q=80&w=200',
-        affiliateLink: 'https://plumgoodness.com',
-        description: 'Soap-free, SLS-free cleansing gel for oily & acne-prone skin.',
-    },
-    {
-        id: '3',
-        name: 'Dot & Key Watermelon Gel',
-        brand: 'Dot & Key',
-        price: 399,
-        rating: 4.6,
-        reviews: 6700,
-        category: 'Moisturizer',
-        benefits: ['Hydration', 'Oil-free'],
-        image: 'https://images.unsplash.com/photo-1643379850623-7eb6442cd262?q=80&w=200',
-        affiliateLink: 'https://dotandkey.com',
-        description: 'Lightweight gel moisturizer with Vitamin C & watermelon for glowing skin.',
-    },
-    {
-        id: '4',
-        name: "Re'equil Sunscreen SPF 50",
-        brand: "Re'equil",
-        price: 495,
-        rating: 4.7,
-        reviews: 15200,
-        category: 'Sunscreen',
-        benefits: ['No white cast'],
-        image: 'https://images.unsplash.com/photo-1620917669809-1af0497965de?q=80&w=200',
-        affiliateLink: 'https://reequil.com',
-        description: 'Ultra-matte dry touch sunscreen for oily, acne-prone skin.',
-    },
-];
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
 export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [products, setProducts] = useState<Product[]>(defaultProducts);
+    const { user } = useAuth();
+    const [products, setProducts] = useState<Product[]>([]);
     const [cart, setCart] = useState<Product[]>([]);
-    const [isAdmin, setIsAdmin] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        loadData();
+        loadProducts();
+        loadCart();
+
+        // Real-Time Subscription: Listen for changes in the products table
+        const productChannel = supabase
+            .channel('public:products')
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'products' },
+                () => {
+                    console.log('Product change detected! Refreshing...');
+                    loadProducts();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(productChannel);
+        };
     }, []);
 
-    const loadData = async () => {
+    const loadProducts = async () => {
         try {
-            const storedProducts = await AsyncStorage.getItem('shop_products');
-            const storedAdmin = await AsyncStorage.getItem('is_admin');
-            const storedCart = await AsyncStorage.getItem('shop_cart');
+            setIsLoading(true);
+            const { data, error } = await supabase
+                .from('products')
+                .select('*')
+                .order('created_at', { ascending: false });
 
-            if (storedProducts) {
-                setProducts(JSON.parse(storedProducts));
+            if (error) {
+                console.warn('Database selection error, using fallback:', error.message);
+                throw error;
             }
-            if (storedAdmin) {
-                setIsAdmin(JSON.parse(storedAdmin));
+
+            if (data) {
+                const mappedProducts: Product[] = data.map(p => ({
+                    id: p.id,
+                    name: p.name,
+                    brand: p.brand,
+                    price: p.price,
+                    rating: p.rating || 0,
+                    reviews: p.reviews || 0,
+                    category: p.category,
+                    benefits: p.benefits || [],
+                    image: p.image || 'https://images.unsplash.com/photo-1620917669809-1af0497965de?q=80&w=200',
+                    affiliateLink: p.affiliate_link || '',
+                    description: p.description || ''
+                }));
+                setProducts(mappedProducts);
             }
+        } catch (error) {
+            console.error('Failed to load products from Supabase', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const loadCart = async () => {
+        try {
+            const storedCart = await AsyncStorage.getItem('shop_cart');
             if (storedCart) {
                 setCart(JSON.parse(storedCart));
             }
         } catch (error) {
-            console.error('Failed to load shop data', error);
+            console.error('Failed to load cart', error);
         }
     };
 
-    const saveData = async (key: string, value: any) => {
+    const saveCart = async (newCart: Product[]) => {
         try {
-            await AsyncStorage.setItem(key, JSON.stringify(value));
+            await AsyncStorage.setItem('shop_cart', JSON.stringify(newCart));
         } catch (error) {
-            console.error(`Failed to save ${key}`, error);
+            console.error('Failed to save cart', error);
         }
     };
 
-    const toggleAdmin = () => {
-        const newValue = !isAdmin;
-        setIsAdmin(newValue);
-        saveData('is_admin', newValue);
+    const addProduct = async (productData: Omit<Product, 'id' | 'rating' | 'reviews'>) => {
+        try {
+            const { data, error } = await supabase.functions.invoke('product-manager', {
+                body: {
+                    action: 'ADD_PRODUCT',
+                    productData
+                }
+            });
+
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+
+            if (data?.success) {
+                await loadProducts(); // Refresh list
+                return true;
+            }
+            return false;
+        } catch (error: any) {
+            console.error('Failed to add product securely', error.message);
+            return false;
+        }
     };
 
-    const addProduct = (productData: Omit<Product, 'id' | 'rating' | 'reviews'>) => {
-        const newProduct: Product = {
-            id: Date.now().toString(),
-            rating: 0,
-            reviews: 0,
-            description: '',
-            ...productData
-        };
-        const updated = [newProduct, ...products];
-        setProducts(updated);
-        saveData('shop_products', updated);
-    };
+    const deleteProduct = async (id: string) => {
+        try {
+            const { data, error } = await supabase.functions.invoke('product-manager', {
+                body: {
+                    action: 'DELETE_PRODUCT',
+                    productId: id
+                }
+            });
 
-    const deleteProduct = (id: string) => {
-        const updated = products.filter(p => p.id !== id);
-        setProducts(updated);
-        saveData('shop_products', updated);
+            if (error) throw error;
+            if (data?.error) throw new Error(data.error);
+
+            if (data?.success) {
+                setProducts(prev => prev.filter(p => p.id !== id));
+                return true;
+            }
+            return false;
+        } catch (error: any) {
+            console.error('Failed to delete product securely', error.message);
+            return false;
+        }
     };
 
     const addToCart = (product: Product) => {
         const updated = [...cart, product];
         setCart(updated);
-        saveData('shop_cart', updated);
+        saveCart(updated);
     };
 
     const removeFromCart = (productId: string) => {
-        // Remove only the first instance if duplicates exist, or by unique logic?
-        // Simple logic: remove element by ID (if unique enough) or filter out one instance.
-        // For simplicity, let's filter out one occurrence using index
         const index = cart.findIndex(p => p.id === productId);
         if (index > -1) {
             const updated = [...cart];
             updated.splice(index, 1);
             setCart(updated);
-            saveData('shop_cart', updated);
+            saveCart(updated);
         }
     };
 
     const clearCart = () => {
         setCart([]);
-        saveData('shop_cart', []);
+        saveCart([]);
     };
 
     return (
         <ProductContext.Provider value={{
             products,
             cart,
-            isAdmin,
-            toggleAdmin,
+            isLoading,
             addProduct,
             deleteProduct,
             addToCart,
             removeFromCart,
-            clearCart
+            clearCart,
+            refreshProducts: loadProducts
         }}>
             {children}
         </ProductContext.Provider>

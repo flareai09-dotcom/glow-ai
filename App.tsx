@@ -32,12 +32,13 @@ import { SignupScreen } from './src/screens/SignupScreen';
 import { GlowyAgent } from './src/components/GlowyAgent';
 import { ChatScreen } from './src/screens/ChatScreen';
 import { ReferralScreen } from './src/screens/ReferralScreen';
+import { AdminPanelScreen } from './src/screens/AdminPanelScreen';
 
 const Stack = createStackNavigator();
 
 // Separate component to check auth state inside provider
 function MainNavigator() {
-  const { userToken, isLoading } = useAuth();
+  const { userToken, isLoading, isAdmin } = useAuth();
 
   if (isLoading) {
     return <SplashScreen onComplete={() => { }} />; // Or simple loading spinner
@@ -54,27 +55,37 @@ function MainNavigator() {
           }}
         >
           {userToken ? (
-            // Main App Stack
-            <>
-              <Stack.Screen name="Home" component={HomeScreen} />
-              <Stack.Screen name="Camera" component={CameraScreen} />
-              <Stack.Screen name="Analysis" component={AnalysisScreen} />
-              <Stack.Screen name="Paywall" component={PaywallScreen} />
-              <Stack.Screen name="Products" component={ProductRecommendationScreen} />
-              <Stack.Screen name="Profile" component={ProfileScreen} />
-              <Stack.Screen name="EditProfile" component={EditProfileScreen} />
-              <Stack.Screen name="Premium" component={PremiumScreen} />
-              <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
-              <Stack.Screen name="Help" component={HelpScreen} />
-              <Stack.Screen name="EditRoutine" component={EditRoutineScreen} />
-              <Stack.Screen name="History" component={HistoryScreen} />
-              <Stack.Screen name="AddProduct" component={AddProductScreen} />
-              <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
-              <Stack.Screen name="Cart" component={CartScreen} />
-              <Stack.Screen name="Stats" component={StatsScreen} />
-              <Stack.Screen name="Referral" component={ReferralScreen} />
-              <Stack.Screen name="Chat" component={ChatScreen} />
-            </>
+            // Check if user is Admin
+            isAdmin ? (
+              // Admin Stack
+              <>
+                <Stack.Screen name="AdminPanel" component={AdminPanelScreen} />
+                <Stack.Screen name="AddProduct" component={AddProductScreen} />
+                <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+              </>
+            ) : (
+              // Main App Stack
+              <>
+                <Stack.Screen name="Home" component={HomeScreen} />
+                <Stack.Screen name="Camera" component={CameraScreen} />
+                <Stack.Screen name="Analysis" component={AnalysisScreen} />
+                <Stack.Screen name="Paywall" component={PaywallScreen} />
+                <Stack.Screen name="Products" component={ProductRecommendationScreen} />
+                <Stack.Screen name="Profile" component={ProfileScreen} />
+                <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+                <Stack.Screen name="Premium" component={PremiumScreen} />
+                <Stack.Screen name="AppSettings" component={AppSettingsScreen} />
+                <Stack.Screen name="Help" component={HelpScreen} />
+                <Stack.Screen name="EditRoutine" component={EditRoutineScreen} />
+                <Stack.Screen name="History" component={HistoryScreen} />
+                <Stack.Screen name="AddProduct" component={AddProductScreen} />
+                <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
+                <Stack.Screen name="Cart" component={CartScreen} />
+                <Stack.Screen name="Stats" component={StatsScreen} />
+                <Stack.Screen name="Referral" component={ReferralScreen} />
+                <Stack.Screen name="Chat" component={ChatScreen} />
+              </>
+            )
           ) : (
             // Auth Stack
             <>

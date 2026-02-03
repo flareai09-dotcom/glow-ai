@@ -1,24 +1,23 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator, ScrollView } from 'react-native';
-import { Mail, Lock, Eye, EyeOff, User, ArrowLeft } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, Phone } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useAuth } from '../context/AuthContext';
 
 export function SignupScreen({ navigation }: { navigation: any }) {
-    const { signUp } = useAuth();
+    const { signUp, signUpWithPhone } = useAuth();
 
-    // ... (imports)
-    const [email, setEmail] = useState('');
+    const [signupType, setSignupType] = useState<'email' | 'phone'>('email');
     const [fullName, setFullName] = useState('');
+    const [identifier, setIdentifier] = useState(''); // email or phone
     const [password, setPassword] = useState('');
-    // ... (rest of the file)
     const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const handleSignup = async () => {
-        if (!email || !password || !confirmPassword || !fullName) {
+        if (!identifier || !password || !confirmPassword || !fullName) {
             Alert.alert('Error', 'Please fill in all fields.');
             return;
         }
@@ -34,16 +33,13 @@ export function SignupScreen({ navigation }: { navigation: any }) {
         }
 
         setLoading(true);
-        const success = await signUp(email, password, fullName);
+        const success = signupType === 'email'
+            ? await signUp(identifier, password, fullName)
+            : await signUpWithPhone(identifier, password, fullName);
         setLoading(false);
 
         if (success) {
-            // Auth state will automatically navigate to Home screen
-            // No manual navigation needed
-            Alert.alert(
-                'Account Created',
-                'Your account has been created successfully!'
-            );
+            Alert.alert('Account Created', 'Your account has been created successfully!');
         }
     };
 
@@ -66,6 +62,22 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                             <Text style={styles.subtitle}>Start your skincare journey today</Text>
                         </Animatable.View>
 
+                        {/* Signup Type Toggle */}
+                        <View style={styles.toggleContainer}>
+                            <TouchableOpacity
+                                style={[styles.toggleButton, signupType === 'email' && styles.toggleActive]}
+                                onPress={() => { setSignupType('email'); setIdentifier(''); }}
+                            >
+                                <Text style={[styles.toggleText, signupType === 'email' && styles.toggleTextActive]}>Email</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                                style={[styles.toggleButton, signupType === 'phone' && styles.toggleActive]}
+                                onPress={() => { setSignupType('phone'); setIdentifier(''); }}
+                            >
+                                <Text style={[styles.toggleText, signupType === 'phone' && styles.toggleTextActive]}>Phone</Text>
+                            </TouchableOpacity>
+                        </View>
+
                         <Animatable.View animation="fadeInUp" delay={200} style={styles.form}>
                             {/* Name Input */}
                             <View style={styles.inputContainer}>
@@ -80,17 +92,21 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                                 />
                             </View>
 
-                            {/* Email Input */}
+                            {/* Identifier Input */}
                             <View style={styles.inputContainer}>
-                                <Mail size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                {signupType === 'email' ? (
+                                    <Mail size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                ) : (
+                                    <Phone size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                )}
                                 <TextInput
                                     style={styles.input}
-                                    placeholder="Email Address"
+                                    placeholder={signupType === 'email' ? "Email Address" : "Phone Number (+91...)"}
                                     placeholderTextColor="#9CA3AF"
-                                    value={email}
-                                    onChangeText={setEmail}
+                                    value={identifier}
+                                    onChangeText={setIdentifier}
                                     autoCapitalize="none"
-                                    keyboardType="email-address"
+                                    keyboardType={signupType === 'email' ? "email-address" : "phone-pad"}
                                 />
                             </View>
 
@@ -178,9 +194,14 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+        backgroundColor: 'white',
         alignItems: 'center',
         justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+        elevation: 2,
     },
     keyboardView: {
         flex: 1,
@@ -192,7 +213,7 @@ const styles = StyleSheet.create({
         paddingBottom: 40,
     },
     header: {
-        marginBottom: 32,
+        marginBottom: 24,
     },
     title: {
         fontSize: 32,
@@ -203,6 +224,35 @@ const styles = StyleSheet.create({
     subtitle: {
         fontSize: 16,
         color: '#6B7280',
+    },
+    toggleContainer: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(20, 184, 166, 0.05)',
+        borderRadius: 12,
+        padding: 4,
+        marginBottom: 24,
+    },
+    toggleButton: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    toggleActive: {
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    toggleText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#6B7280',
+    },
+    toggleTextActive: {
+        color: '#14B8A6',
     },
     form: {
         width: '100%',
@@ -239,7 +289,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
-        elevation: 5, // Android shadow
+        elevation: 5,
         marginBottom: 24,
         marginTop: 16,
     },

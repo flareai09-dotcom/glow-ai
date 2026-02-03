@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
 import { ChevronLeft, Camera, Link, DollarSign, Tag, Briefcase } from 'lucide-react-native';
 import { useProduct } from '../context/ProductContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -12,14 +12,16 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
     const [category, setCategory] = useState('Skincare');
     const [image, setImage] = useState('');
     const [affiliateLink, setAffiliateLink] = useState('');
+    const [loading, setLoading] = useState(false);
 
-    const handleSave = () => {
+    const handleSave = async () => {
         if (!name || !brand || !price || !affiliateLink) {
             Alert.alert('Missing Fields', 'Please fill in all required fields');
             return;
         }
 
-        addProduct({
+        setLoading(true);
+        const success = await addProduct({
             name,
             brand,
             price: Number(price),
@@ -28,9 +30,14 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
             image: image || 'https://images.unsplash.com/photo-1620917669809-1af0497965de?q=80&w=200', // Default placeholder
             affiliateLink
         });
+        setLoading(false);
 
-        Alert.alert('Success', 'Product added successfully');
-        navigation.goBack();
+        if (success) {
+            Alert.alert('Success', 'Product added successfully');
+            navigation.goBack();
+        } else {
+            Alert.alert('Error', 'Failed to add product. Please try again.');
+        }
     };
 
     return (
@@ -130,12 +137,16 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
                 </ScrollView>
 
                 <View style={styles.footer}>
-                    <TouchableOpacity onPress={handleSave}>
+                    <TouchableOpacity onPress={handleSave} disabled={loading}>
                         <LinearGradient
                             colors={['#14B8A6', '#10B981']}
                             style={styles.saveButton}
                         >
-                            <Text style={styles.saveButtonText}>Save Product</Text>
+                            {loading ? (
+                                <ActivityIndicator color="white" />
+                            ) : (
+                                <Text style={styles.saveButtonText}>Save Product</Text>
+                            )}
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>

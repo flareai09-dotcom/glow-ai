@@ -5,13 +5,15 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useProduct, Product } from '../context/ProductContext';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
 
 interface ProductRecommendationScreenProps {
     navigation: any;
 }
 
 export function ProductRecommendationScreen({ navigation }: ProductRecommendationScreenProps) {
-    const { products, isAdmin, deleteProduct, cart, addToCart } = useProduct();
+    const { products, deleteProduct, cart, addToCart } = useProduct();
+    const { isAdmin } = useAuth();
     const { isDark } = useTheme();
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [showFilters, setShowFilters] = useState(false);
@@ -39,7 +41,18 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
             `Are you sure you want to delete ${product.name}?`,
             [
                 { text: "Cancel", style: "cancel" },
-                { text: "Delete", style: "destructive", onPress: () => deleteProduct(product.id) }
+                {
+                    text: "Delete",
+                    style: "destructive",
+                    onPress: async () => {
+                        const success = await deleteProduct(product.id);
+                        if (success) {
+                            Alert.alert("Success", "Product deleted");
+                        } else {
+                            Alert.alert("Error", "Failed to delete product");
+                        }
+                    }
+                }
             ]
         );
     };

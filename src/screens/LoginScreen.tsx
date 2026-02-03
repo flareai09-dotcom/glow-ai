@@ -1,33 +1,32 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, SafeAreaView, Alert, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Phone } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 
 export function LoginScreen({ navigation }: { navigation: any }) {
-    const { signIn } = useAuth();
-    const { isDark } = useTheme(); // Even though Auth is outside MainStack, we can use Theme if Provider wraps it
+    const { signIn, signInWithPhone } = useAuth();
+    const { isDark } = useTheme();
 
-    const [email, setEmail] = useState('');
+    const [loginType, setLoginType] = useState<'email' | 'phone'>('email');
+    const [identifier, setIdentifier] = useState(''); // email or phone
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
 
     const handleLogin = async () => {
-        if (!email || !password) {
-            Alert.alert('Error', 'Please enter both email and password.');
+        if (!identifier || !password) {
+            Alert.alert('Error', `Please enter both ${loginType} and password.`);
             return;
         }
 
         setLoading(true);
-        // User requested STRICT exact match
-        setLoading(true);
-        const success = await signIn(email, password);
+        const success = loginType === 'email'
+            ? await signIn(identifier, password)
+            : await signInWithPhone(identifier, password);
         setLoading(false);
-        // Error handling is done inside context via Alerts for now
-
     };
 
     return (
@@ -48,18 +47,38 @@ export function LoginScreen({ navigation }: { navigation: any }) {
                         <Text style={styles.subtitle}>Sign in to continue your glow journey</Text>
                     </Animatable.View>
 
+                    {/* Login Type Toggle */}
+                    <View style={styles.toggleContainer}>
+                        <TouchableOpacity
+                            style={[styles.toggleButton, loginType === 'email' && styles.toggleActive]}
+                            onPress={() => { setLoginType('email'); setIdentifier(''); }}
+                        >
+                            <Text style={[styles.toggleText, loginType === 'email' && styles.toggleTextActive]}>Email</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            style={[styles.toggleButton, loginType === 'phone' && styles.toggleActive]}
+                            onPress={() => { setLoginType('phone'); setIdentifier(''); }}
+                        >
+                            <Text style={[styles.toggleText, loginType === 'phone' && styles.toggleTextActive]}>Phone</Text>
+                        </TouchableOpacity>
+                    </View>
+
                     <Animatable.View animation="fadeInUp" delay={200} style={styles.form}>
-                        {/* Email Input */}
+                        {/* Identifier Input */}
                         <View style={styles.inputContainer}>
-                            <Mail size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            {loginType === 'email' ? (
+                                <Mail size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            ) : (
+                                <Phone size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            )}
                             <TextInput
                                 style={styles.input}
-                                placeholder="Email Address"
+                                placeholder={loginType === 'email' ? "Email Address" : "Phone Number (+91...)"}
                                 placeholderTextColor="#9CA3AF"
-                                value={email}
-                                onChangeText={setEmail}
+                                value={identifier}
+                                onChangeText={setIdentifier}
                                 autoCapitalize="none"
-                                keyboardType="email-address"
+                                keyboardType={loginType === 'email' ? "email-address" : "phone-pad"}
                             />
                         </View>
 
@@ -73,7 +92,7 @@ export function LoginScreen({ navigation }: { navigation: any }) {
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry={!showPassword}
-                                autoCapitalize="none" // Important for strict password matching
+                                autoCapitalize="none"
                             />
                             <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                                 {showPassword ? (
@@ -138,7 +157,7 @@ const styles = StyleSheet.create({
     },
     header: {
         alignItems: 'center',
-        marginBottom: 40,
+        marginBottom: 30,
     },
     logoCircle: {
         width: 80,
@@ -168,6 +187,35 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#6B7280',
         textAlign: 'center',
+    },
+    toggleContainer: {
+        flexDirection: 'row',
+        backgroundColor: 'rgba(20, 184, 166, 0.05)',
+        borderRadius: 12,
+        padding: 4,
+        marginBottom: 24,
+    },
+    toggleButton: {
+        flex: 1,
+        paddingVertical: 10,
+        alignItems: 'center',
+        borderRadius: 10,
+    },
+    toggleActive: {
+        backgroundColor: 'white',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    toggleText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#6B7280',
+    },
+    toggleTextActive: {
+        color: '#14B8A6',
     },
     form: {
         width: '100%',
