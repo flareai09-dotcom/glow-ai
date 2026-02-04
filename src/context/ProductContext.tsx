@@ -27,6 +27,8 @@ interface ProductContextType {
     removeFromCart: (productId: string) => void;
     clearCart: () => void;
     refreshProducts: () => void;
+    isAdmin: boolean;
+    toggleAdmin: () => void;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
@@ -36,10 +38,12 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [products, setProducts] = useState<Product[]>([]);
     const [cart, setCart] = useState<Product[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     useEffect(() => {
         loadProducts();
         loadCart();
+        loadAdminStatus();
 
         // Real-Time Subscription: Listen for changes in the products table
         const productChannel = supabase
@@ -103,6 +107,25 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
             }
         } catch (error) {
             console.error('Failed to load cart', error);
+        }
+    };
+
+    const loadAdminStatus = async () => {
+        try {
+            const status = await AsyncStorage.getItem('is_admin');
+            setIsAdmin(status === 'true');
+        } catch (error) {
+            console.error('Failed to load admin status', error);
+        }
+    };
+
+    const toggleAdmin = async () => {
+        const newStatus = !isAdmin;
+        setIsAdmin(newStatus);
+        try {
+            await AsyncStorage.setItem('is_admin', String(newStatus));
+        } catch (error) {
+            console.error('Failed to save admin status', error);
         }
     };
 
@@ -191,7 +214,9 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
             addToCart,
             removeFromCart,
             clearCart,
-            refreshProducts: loadProducts
+            refreshProducts: loadProducts,
+            isAdmin,
+            toggleAdmin
         }}>
             {children}
         </ProductContext.Provider>

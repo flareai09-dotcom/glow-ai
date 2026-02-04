@@ -24,9 +24,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             {/* Decorative circles */}
             <Animatable.View
                 animation={{
-                    0: { scale: 1, opacity: 0.3 },
-                    0.5: { scale: 1.2, opacity: 0.5 },
-                    1: { scale: 1, opacity: 0.3 },
+                    0: { transform: [{ scale: 1 }], opacity: 0.3 },
+                    0.5: { transform: [{ scale: 1.2 }], opacity: 0.5 },
+                    1: { transform: [{ scale: 1 }], opacity: 0.3 },
                 }}
                 iterationCount="infinite"
                 duration={4000}
@@ -34,9 +34,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
             />
             <Animatable.View
                 animation={{
-                    0: { scale: 1, opacity: 0.2 },
-                    0.5: { scale: 1.3, opacity: 0.4 },
-                    1: { scale: 1, opacity: 0.2 },
+                    0: { transform: [{ scale: 1 }], opacity: 0.2 },
+                    0.5: { transform: [{ scale: 1.3 }], opacity: 0.4 },
+                    1: { transform: [{ scale: 1 }], opacity: 0.2 },
                 }}
                 iterationCount="infinite"
                 duration={5000}
@@ -69,9 +69,9 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                         <Animatable.View
                             key={i}
                             animation={{
-                                0: { scale: 1, opacity: 0.5 },
-                                0.5: { scale: 1.5, opacity: 1 },
-                                1: { scale: 1, opacity: 0.5 },
+                                0: { transform: [{ scale: 1 }], opacity: 0.5 },
+                                0.5: { transform: [{ scale: 1.5 }], opacity: 1 },
+                                1: { transform: [{ scale: 1 }], opacity: 0.5 },
                             }}
                             iterationCount="infinite"
                             delay={i * 200}

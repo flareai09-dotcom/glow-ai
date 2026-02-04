@@ -29,7 +29,7 @@ const onboardingData = [
         description: "Unlock unlimited scans, detailed analysis, and expert product recommendations. One-time payment, lifetime access.",
         colors: ['#10B981', '#14B8A6'],
     },
-];
+] as const;
 
 export function OnboardingScreens({ currentStep, onNext, onSkip }: OnboardingScreensProps) {
     const current = onboardingData[currentStep];

@@ -1,7 +1,4 @@
-// Supabase Edge Function for AI Skin Analysis
-// Deploy to: https://supabase.com/dashboard/project/sdaozejlnkzrkidxjylf/functions
-
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')!
@@ -13,7 +10,7 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
@@ -80,7 +77,9 @@ Return ONLY valid JSON (no markdown, no code blocks):
       "area": "location on face"
     }
   ],
-  "summary": "brief overall assessment in 1-2 sentences"
+  "summary": "brief overall assessment in 1-2 sentences",
+  "remedies": ["list of 3-4 specific clinical remedies"],
+  "routine_suggestions": ["morning and evening routine steps"]
 }
 
 Detect these issues (analyze all 6):
@@ -149,7 +148,7 @@ Return valid JSON only.`
             }
         )
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error:', error)
         return new Response(
             JSON.stringify({

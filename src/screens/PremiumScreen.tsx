@@ -22,6 +22,10 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
 
     const confirmSubscription = async (paymentId: string) => {
         try {
+            if (!user) {
+                console.error("No user found during subscription confirmation");
+                return;
+            }
             const success = await profileService.updateProfile(user.id, { is_premium: true });
 
             if (success) {

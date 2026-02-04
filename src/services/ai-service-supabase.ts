@@ -107,6 +107,16 @@ export class AIService {
                 },
             ],
             summary: 'Basic analysis completed. For detailed results, please try again.',
+            remedies: [
+                'Maintain a consistent cleansing routine',
+                'Use non-comedogenic products',
+                'Apply sunscreen daily (SPF 30+)',
+                'Keep skin hydrated with a lightweight moisturizer'
+            ],
+            routine_suggestions: [
+                'Morning: Gentle Cleanser + Vitamin C + Moisturizer + SPF',
+                'Evening: Double Cleanse + Targeted Treatment + Hydrating Moisturizer'
+            ]
         };
     }
 }

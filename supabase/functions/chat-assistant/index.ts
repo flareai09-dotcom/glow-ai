@@ -1,5 +1,4 @@
-// Supabase Edge Function for AI Chat Assistant
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
@@ -7,7 +6,7 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
-serve(async (req) => {
+serve(async (req: Request) => {
     // Handle CORS
     if (req.method === 'OPTIONS') {
         return new Response('ok', { headers: corsHeaders })
@@ -94,14 +93,7 @@ Your goals:
 User Query: ${message}`
 
         // Prepare contents for Gemini
-        // If conversation history ends with 'user', we might need to be careful.
-        // However, we are appending a new 'user' message with the system prompt inside it.
-        // A better way is to use system_instruction if available, but for now we'll ensure alternating roles.
-
         if (conversationHistory.length > 0 && conversationHistory[conversationHistory.length - 1].role === 'user') {
-            // If history ends with user, append a dummy model response or skip the last history item
-            // Actually, usually history ends with model (AI response).
-            // If it ends with user, Gemini will throw error on next user message.
             conversationHistory.pop()
         }
 
@@ -150,7 +142,6 @@ User Query: ${message}`
         const aiResponse = geminiData.candidates[0].content.parts[0].text
 
         // Save to database
-        // We do this in parallel to speed up response
         const saveTasks = [
             supabaseClient.from('chat_history').insert({
                 user_id: activeUser.id,
@@ -168,7 +159,6 @@ User Query: ${message}`
             await Promise.all(saveTasks)
         } catch (saveError) {
             console.error('Error saving to chat_history:', saveError)
-            // We don't fail the request if saving history fails, but we log it.
         }
 
         return new Response(
