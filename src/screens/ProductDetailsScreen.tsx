@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, SafeAreaView, Linking, Alert } from 'react-native';
+import { View, Text, ScrollView, Image, TouchableOpacity, StyleSheet, SafeAreaView, Linking, Alert, StatusBar, Platform } from 'react-native';
 import { ChevronLeft, ShoppingCart, Star, Heart, Share2, Check } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useProduct, Product } from '../context/ProductContext';
@@ -8,11 +8,18 @@ import { useTheme } from '../context/ThemeContext';
 export function ProductDetailsScreen({ route, navigation }: { route: any, navigation: any }) {
     const { product } = route.params as { product: Product };
     const { addToCart } = useProduct();
-    const { isDark } = useTheme();
+    const { colors, isDark } = useTheme();
 
     const handleBuyNow = () => {
         if (product.affiliateLink) {
-            Linking.openURL(product.affiliateLink).catch(err => console.error("Couldn't load page", err));
+            let finalLink = product.affiliateLink;
+            if (finalLink.includes('amazon.in') && !finalLink.includes('tag=')) {
+                finalLink = `${finalLink}${finalLink.includes('?') ? '&' : '?'}tag=glowai03-21`;
+            }
+            Linking.openURL(finalLink).catch(err => {
+                console.error("Couldn't load page", err);
+                Alert.alert("Link error", "Could not open the store link. Please check your internet connection.");
+            });
         } else {
             Alert.alert("Available at stores", "Please check your local retailers.");
         }
@@ -24,15 +31,21 @@ export function ProductDetailsScreen({ route, navigation }: { route: any, naviga
     };
 
     const themeStyles = {
-        container: { backgroundColor: isDark ? '#111827' : '#FAF7F5' },
-        text: { color: isDark ? '#F9FAFB' : '#1F2937' },
-        card: { backgroundColor: isDark ? '#1F2937' : 'white' },
-        subText: { color: isDark ? '#9CA3AF' : '#6B7280' },
-        divider: { backgroundColor: isDark ? '#374151' : '#E5E7EB' },
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        card: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary },
+        subText: { color: colors.subText },
+        primaryText: { color: colors.primary },
+        divider: { backgroundColor: colors.border },
+        imageContainer: { backgroundColor: colors.background, borderColor: colors.border },
+        benefitTag: { backgroundColor: `${colors.primary}1A`, borderColor: `${colors.primary}4D` },
+        ratingBadge: { backgroundColor: `${colors.primary}1A`, borderColor: colors.primary },
+        footer: { backgroundColor: colors.card, borderTopColor: colors.border, shadowColor: colors.primary },
+        buyNowText: { color: colors.background },
     };
 
     return (
-        <SafeAreaView style={[styles.container, themeStyles.container]}>
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.iconButton, themeStyles.card]}>
@@ -43,29 +56,38 @@ export function ProductDetailsScreen({ route, navigation }: { route: any, naviga
                         <Share2 size={20} color={themeStyles.text.color} />
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.iconButton, themeStyles.card]}>
-                        <Heart size={20} color="#EF4444" />
+                        <Heart size={20} color="#FF003C" />
                     </TouchableOpacity>
                 </View>
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent}>
                 {/* Image */}
-                <View style={[styles.imageContainer, themeStyles.card]}>
-                    <Image source={{ uri: product.image }} style={styles.image} resizeMode="contain" />
+                <View style={[styles.imageContainer, themeStyles.imageContainer]}>
+                    <Image
+                        source={{
+                            uri: product.image && product.image.trim() !== '' ? product.image : 'https://images.unsplash.com/photo-1620917669809-1af0497965de?q=80&w=400',
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                            }
+                        }}
+                        style={styles.image}
+                        resizeMode="contain"
+                    />
                 </View>
 
                 {/* Content */}
                 <View style={styles.content}>
                     <View style={styles.titleRow}>
                         <Text style={[styles.brand, themeStyles.subText]}>{product.brand}</Text>
-                        <View style={styles.ratingBadge}>
-                            <Star size={12} color="white" fill="white" />
-                            <Text style={styles.ratingText}>{product.rating} ({product.reviews})</Text>
+                        <View style={[styles.ratingBadge, themeStyles.ratingBadge]}>
+                            <Star size={12} color={colors.primary} fill={colors.primary} />
+                            <Text style={[styles.ratingText, { color: colors.primary }]}>{product.rating} ({product.reviews})</Text>
                         </View>
                     </View>
 
                     <Text style={[styles.name, themeStyles.text]}>{product.name}</Text>
-                    <Text style={[styles.price, themeStyles.text]}>₹{product.price}</Text>
+                    <Text style={[styles.price, { color: colors.primary }]}>₹{product.price}</Text>
 
                     <View style={[styles.divider, themeStyles.divider]} />
 
@@ -80,9 +102,9 @@ export function ProductDetailsScreen({ route, navigation }: { route: any, naviga
                         <Text style={[styles.sectionTitle, themeStyles.text]}>Key Benefits</Text>
                         <View style={styles.benefitsContainer}>
                             {product.benefits && product.benefits.map((benefit, index) => (
-                                <View key={index} style={[styles.benefitTag, { backgroundColor: isDark ? '#064E3B' : '#F0FDFA' }]}>
-                                    <Check size={14} color="#14B8A6" />
-                                    <Text style={styles.benefitText}>{benefit}</Text>
+                                <View key={index} style={[styles.benefitTag, themeStyles.benefitTag]}>
+                                    <Check size={14} color={colors.primary} />
+                                    <Text style={[styles.benefitText, { color: colors.primary }]}>{benefit}</Text>
                                 </View>
                             ))}
                         </View>
@@ -91,18 +113,18 @@ export function ProductDetailsScreen({ route, navigation }: { route: any, naviga
             </ScrollView>
 
             {/* Sticky Footer */}
-            <View style={[styles.footer, themeStyles.card]}>
-                <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-                    <ShoppingCart size={20} color="#14B8A6" />
-                    <Text style={styles.addToCartText}>Add to Cart</Text>
+            <View style={[styles.footer, themeStyles.footer]}>
+                <TouchableOpacity style={[styles.addToCartButton, { borderColor: colors.primary }]} onPress={handleAddToCart}>
+                    <ShoppingCart size={20} color={colors.primary} />
+                    <Text style={[styles.addToCartText, { color: colors.primary }]}>Add to Cart</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.buyNowButton} onPress={handleBuyNow}>
                     <LinearGradient
-                        colors={['#14B8A6', '#10B981']}
+                        colors={[colors.primary, colors.secondary]}
                         style={styles.gradientButton}
                     >
-                        <Text style={styles.buyNowText}>Buy Now</Text>
+                        <Text style={[styles.buyNowText, themeStyles.buyNowText]}>Buy Now</Text>
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -132,11 +154,13 @@ const styles = StyleSheet.create({
         borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: '#00E5FF',
     },
     scrollContent: {
         paddingBottom: 120,
@@ -149,6 +173,9 @@ const styles = StyleSheet.create({
         padding: 24,
         alignItems: 'center',
         justifyContent: 'center',
+        backgroundColor: '#09090B',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     image: {
         width: '100%',
@@ -172,14 +199,16 @@ const styles = StyleSheet.create({
     ratingBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#F59E0B',
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
         gap: 4,
+        borderWidth: 1,
+        borderColor: '#00E5FF',
     },
     ratingText: {
-        color: 'white',
+        color: '#00E5FF',
         fontSize: 12,
         fontWeight: 'bold',
     },
@@ -192,7 +221,7 @@ const styles = StyleSheet.create({
     price: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#14B8A6',
+        color: '#00E5FF',
         marginBottom: 24,
     },
     divider: {
@@ -223,9 +252,11 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         borderRadius: 100,
         gap: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.3)',
     },
     benefitText: {
-        color: '#0D9488',
+        color: '#00E5FF',
         fontWeight: '600',
         fontSize: 13,
     },
@@ -240,25 +271,27 @@ const styles = StyleSheet.create({
         gap: 16,
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
-        shadowColor: '#000',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
         elevation: 20,
+        borderTopWidth: 1,
+        borderTopColor: 'rgba(0, 229, 255, 0.2)',
     },
     addToCartButton: {
         flex: 1,
         height: 56,
         borderRadius: 16,
-        borderWidth: 2,
-        borderColor: '#14B8A6',
+        borderWidth: 1,
+        borderColor: '#00E5FF',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
     },
     addToCartText: {
-        color: '#14B8A6',
+        color: '#00E5FF',
         fontWeight: 'bold',
         fontSize: 16,
     },
@@ -272,7 +305,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     buyNowText: {
-        color: 'white',
+        color: '#09090B',
         fontWeight: 'bold',
         fontSize: 18,
     },

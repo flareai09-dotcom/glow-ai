@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, LayoutAnimation, Platform, UIManager, StatusBar } from 'react-native';
 import { ChevronLeft, ChevronDown, ChevronUp, MessageCircle } from 'lucide-react-native';
+import { useTheme } from '../context/ThemeContext';
 
 if (Platform.OS === 'android') {
     if (UIManager.setLayoutAnimationEnabledExperimental) {
@@ -29,24 +30,35 @@ const faqs = [
 
 export function HelpScreen({ navigation }: { navigation: any }) {
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+    const { colors } = useTheme();
 
     const toggleExpand = (index: number) => {
         LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
         setExpandedIndex(expandedIndex === index ? null : index);
     };
 
+    const themeStyles = {
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        subText: { color: colors.subText },
+        card: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary },
+        iconBox: { backgroundColor: `${colors.primary}1A` },
+        button: { backgroundColor: colors.primary },
+        buttonText: { color: colors.background },
+    };
+
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ChevronLeft size={24} color="#1F2937" />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: colors.card }]}>
+                    <ChevronLeft size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Help & FAQs</Text>
+                <Text style={[styles.headerTitle, themeStyles.text]}>Help & FAQs</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
-                <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+                <Text style={[styles.sectionTitle, themeStyles.text]}>Frequently Asked Questions</Text>
 
                 <View style={styles.faqContainer}>
                     {faqs.map((faq, index) => (
@@ -57,29 +69,29 @@ export function HelpScreen({ navigation }: { navigation: any }) {
                             activeOpacity={0.8}
                         >
                             <View style={styles.questionRow}>
-                                <Text style={styles.question}>{faq.question}</Text>
+                                <Text style={[styles.question, themeStyles.text]}>{faq.question}</Text>
                                 {expandedIndex === index ?
-                                    <ChevronUp size={20} color="#6B7280" /> :
-                                    <ChevronDown size={20} color="#6B7280" />
+                                    <ChevronUp size={20} color={colors.primary} /> :
+                                    <ChevronDown size={20} color={colors.primary} />
                                 }
                             </View>
                             {expandedIndex === index && (
-                                <Text style={styles.answer}>{faq.answer}</Text>
+                                <Text style={[styles.answer, themeStyles.subText]}>{faq.answer}</Text>
                             )}
                         </TouchableOpacity>
                     ))}
                 </View>
 
-                <View style={styles.contactCard}>
-                    <View style={styles.iconBox}>
-                        <MessageCircle size={24} color="#14B8A6" />
+                <View style={[styles.contactCard, themeStyles.card]}>
+                    <View style={[styles.iconBox, themeStyles.iconBox]}>
+                        <MessageCircle size={24} color={colors.primary} />
                     </View>
                     <View style={styles.flex1}>
-                        <Text style={styles.contactTitle}>Still have questions?</Text>
-                        <Text style={styles.contactSubtitle}>Our team is happy to help.</Text>
+                        <Text style={[styles.contactTitle, themeStyles.text]}>Still have questions?</Text>
+                        <Text style={[styles.contactSubtitle, themeStyles.subText]}>Our team is happy to help.</Text>
                     </View>
-                    <TouchableOpacity style={styles.contactButton}>
-                        <Text style={styles.contactButtonText}>Contact Us</Text>
+                    <TouchableOpacity style={[styles.contactButton, themeStyles.button]}>
+                        <Text style={[styles.contactButtonText, themeStyles.buttonText]}>Contact Us</Text>
                     </TouchableOpacity>
                 </View>
             </ScrollView>
@@ -90,7 +102,7 @@ export function HelpScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     header: {
         flexDirection: 'row',
@@ -102,17 +114,13 @@ const styles = StyleSheet.create({
     backButton: {
         padding: 8,
         borderRadius: 12,
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
+        elevation: 0,
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     content: {
         padding: 24,
@@ -120,7 +128,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
         marginBottom: 24,
     },
     faqContainer: {
@@ -128,14 +136,9 @@ const styles = StyleSheet.create({
         marginBottom: 32,
     },
     faqItem: {
-        backgroundColor: 'white',
         borderRadius: 20,
         padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        borderWidth: 1,
     },
     questionRow: {
         flexDirection: 'row',
@@ -145,34 +148,36 @@ const styles = StyleSheet.create({
     question: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1F2937',
+        color: '#E2E8F0',
         flex: 1,
         paddingRight: 16,
     },
     answer: {
         marginTop: 12,
         fontSize: 14,
-        color: '#6B7280',
+        color: '#94A3B8',
         lineHeight: 20,
     },
     contactCard: {
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderRadius: 24,
         padding: 24,
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
-        shadowColor: '#000',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     iconBox: {
         width: 48,
         height: 48,
         borderRadius: 16,
-        backgroundColor: '#F0FDFA',
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -182,20 +187,20 @@ const styles = StyleSheet.create({
     contactTitle: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     contactSubtitle: {
         fontSize: 12,
-        color: '#6B7280',
+        color: '#94A3B8',
     },
     contactButton: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
         paddingHorizontal: 16,
         paddingVertical: 8,
         borderRadius: 12,
     },
     contactButtonText: {
-        color: 'white',
+        color: '#09090B',
         fontSize: 12,
         fontWeight: 'bold',
     },

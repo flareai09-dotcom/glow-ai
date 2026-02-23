@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
 import { Sun, Moon, TrendingUp, Calendar, Droplet, Flame, Camera, ShoppingBag, User, Edit2, Crown } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -16,7 +17,7 @@ interface HomeScreenProps {
 }
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
-    const { isDark } = useTheme();
+    const { colors, isDark } = useTheme();
     const { user } = useAuth();
     const { morningTasks, nightTasks, toggleTask } = useRoutine();
     const currentHour = new Date().getHours();
@@ -29,12 +30,15 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     const [skinScore, setSkinScore] = useState(0);
     const [userName, setUserName] = useState('Guest');
     const [weeklyProgress, setWeeklyProgress] = useState<{ day: string; score: number }[]>([]);
+    const [currentDayName, setCurrentDayName] = useState('');
     const [premiumCount, setPremiumCount] = useState(0);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadData();
-    }, [user]);
+    useFocusEffect(
+        useCallback(() => {
+            loadData();
+        }, [user])
+    );
 
     const loadData = async () => {
         if (!user?.id) {
@@ -63,6 +67,9 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             const weeklyScores = await scanService.getWeeklyScores(user.id, 7);
             setWeeklyProgress(weeklyScores);
 
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            setCurrentDayName(dayNames[new Date().getDay()]);
+
             // Load premium count
             const count = await profileService.getPremiumUserCount();
             setPremiumCount(count);
@@ -76,27 +83,33 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     const tasks = activeTab === 'morning' ? morningTasks : nightTasks;
 
     const themeStyles = {
-        container: { backgroundColor: isDark ? '#111827' : '#FAF7F5' },
-        text: { color: isDark ? '#F9FAFB' : '#1F2937' },
-        card: { backgroundColor: isDark ? '#1F2937' : 'white' },
-        subText: { color: isDark ? '#9CA3AF' : '#6B7280' },
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        card: {
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border
+        },
+        subText: { color: colors.subText },
+        primaryText: { color: colors.primary },
+        iconBoxPrimary: { backgroundColor: `${colors.primary}1A` },
     };
 
     return (
         <View style={[styles.container, themeStyles.container]}>
-            <ScrollView style={styles.flex1} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.flex1} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={styles.headerContainer}>
                     <LinearGradient
-                        colors={isDark ? ['#0F766E', '#0D9488'] : ['#14B8A6', '#10B981']}
+                        colors={['#0F0C29', '#302B63', '#24243E']}
                         style={styles.headerGradient}
                     >
                         <View style={styles.headerRow}>
                             <View>
-                                <Text style={styles.welcomeText}>Welcome back,</Text>
-                                <Text style={styles.userName}>{userName} ✨</Text>
+                                <Text style={styles.welcomeText}>Welcome,</Text>
+                                <Text style={styles.userName}>{userName} ⚡</Text>
                                 <View style={styles.premiumBadgeContainer}>
-                                    <Crown size={14} color="#FFD700" fill="#FFD700" />
+                                    <Crown size={14} color="#FF003C" fill="#FF003C" />
                                     <Text style={styles.premiumCountText}>{premiumCount.toLocaleString()} Premium Members</Text>
                                 </View>
                             </View>
@@ -105,7 +118,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                                 style={styles.premiumButton}
                             >
                                 <LinearGradient
-                                    colors={['#FFD700', '#F59E0B', '#B45309']}
+                                    colors={['#FF003C', '#FF007F', '#7928CA']}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 1 }}
                                     style={styles.premiumGradient}
@@ -152,16 +165,16 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                         style={[styles.quickActions, themeStyles.card]}
                     >
                         {[
-                            { icon: Camera, label: 'New Scan', target: 'Camera', color: isDark ? '#111827' : '#F0FDFA', iconColor: '#14B8A6' },
-                            { icon: ShoppingBag, label: 'Products', target: 'Products', color: isDark ? '#111827' : '#FFF7ED', iconColor: '#F97316' },
-                            { icon: Calendar, label: 'History', target: 'History', color: isDark ? '#111827' : '#F0FDFA', iconColor: '#14B8A6' },
+                            { icon: Camera, label: 'New Scan', target: 'Camera', color: `${colors.primary}1A`, iconColor: colors.primary },
+                            { icon: ShoppingBag, label: 'Products', target: 'Products', color: `${colors.error}1A`, iconColor: colors.error },
+                            { icon: Calendar, label: 'History', target: 'History', color: `${colors.success}1A`, iconColor: colors.success },
                         ].map((action, i) => (
                             <TouchableOpacity
                                 key={i}
                                 onPress={() => action.target && navigation.navigate(action.target)}
                                 style={styles.actionItem}
                             >
-                                <View style={[styles.actionIconContainer, { backgroundColor: action.color }]}>
+                                <View style={[styles.actionIconContainer, { backgroundColor: action.color, borderWidth: 1, borderColor: action.iconColor }]}>
                                     <action.icon size={24} color={action.iconColor} />
                                 </View>
                                 <Text style={[styles.actionLabel, themeStyles.text]}>{action.label}</Text>
@@ -180,18 +193,18 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 
                         <View style={styles.routineTabs}>
                             <TouchableOpacity
-                                style={[styles.tabButton, activeTab === 'morning' && styles.activeTab, isDark && activeTab === 'morning' && { backgroundColor: '#374151' }]}
+                                style={[styles.tabButton, activeTab === 'morning' && [styles.activeTab, { borderColor: `${colors.primary}50` }], activeTab === 'morning' && { backgroundColor: `${colors.primary}1A` }]}
                                 onPress={() => setActiveTab('morning')}
                             >
-                                <Sun size={20} color={activeTab === 'morning' ? '#14B8A6' : '#9CA3AF'} />
-                                <Text style={[styles.tabText, activeTab === 'morning' ? styles.activeTabText : styles.inactiveTabText]}>Morning</Text>
+                                <Sun size={20} color={activeTab === 'morning' ? colors.primary : colors.subText} />
+                                <Text style={[styles.tabText, activeTab === 'morning' ? { color: colors.primary } : { color: colors.subText }]}>Morning</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.tabButton, activeTab === 'night' && styles.activeTab, isDark && activeTab === 'night' && { backgroundColor: '#374151' }]}
+                                style={[styles.tabButton, activeTab === 'night' && [styles.activeTab, { borderColor: `${colors.primary}50` }], activeTab === 'night' && { backgroundColor: `${colors.primary}1A` }]}
                                 onPress={() => setActiveTab('night')}
                             >
-                                <Moon size={20} color={activeTab === 'night' ? '#14B8A6' : '#9CA3AF'} />
-                                <Text style={[styles.tabText, activeTab === 'night' ? styles.activeTabText : styles.inactiveTabText]}>Evening</Text>
+                                <Moon size={20} color={activeTab === 'night' ? colors.primary : colors.subText} />
+                                <Text style={[styles.tabText, activeTab === 'night' ? { color: colors.primary } : { color: colors.subText }]}>Evening</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -207,7 +220,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                                         delay={index * 100}
                                         style={[styles.taskCard, themeStyles.card]}
                                     >
-                                        <View style={[styles.taskCheck, task.completed ? styles.taskDone : styles.taskPending]}>
+                                        <View style={[styles.taskCheck, { borderColor: colors.border }, task.completed ? [styles.taskDone, { backgroundColor: `${colors.success}1A`, borderColor: colors.success }] : styles.taskPending]}>
                                             {task.completed ? <Text style={styles.checkMark}>✓</Text> : <View style={styles.pendingDot} />}
                                         </View>
                                         <View style={styles.flex1}>
@@ -236,9 +249,13 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                                             style={[
                                                 styles.chartBar,
                                                 { height: `${day.score}%` },
-                                                i === 6 ? styles.chartBarActive : styles.chartBarInactive
+                                                day.day === currentDayName ? [styles.chartBarActive, { backgroundColor: colors.primary, shadowColor: colors.primary }] : [styles.chartBarInactive, { backgroundColor: colors.border }]
                                             ]}
-                                        />
+                                        >
+                                            {day.score > 0 && (
+                                                <Text style={styles.barPercentageText}>{day.score}%</Text>
+                                            )}
+                                        </View>
                                         <Text style={styles.chartLabel}>{day.day}</Text>
                                     </View>
                                 ))}
@@ -249,18 +266,18 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                     {/* Tip Card */}
                     <View style={styles.tipCardContainer}>
                         <LinearGradient
-                            colors={['#F5D5CB', '#D1E3D1']}
+                            colors={['#1A002C', '#300018']}
                             start={{ x: 0, y: 0 }}
                             end={{ x: 1, y: 1 }}
-                            style={styles.tipGradient}
+                            style={[styles.tipGradient, { borderWidth: 1, borderColor: '#FF003C', borderRadius: 12 }]}
                         >
                             <View style={styles.tipRow}>
-                                <View style={styles.tipIconContainer}>
-                                    <Droplet size={24} color="#14B8A6" />
+                                <View style={[styles.tipIconContainer, { backgroundColor: `${colors.primary}1A`, borderColor: `${colors.primary}4D` }]}>
+                                    <Droplet size={24} color={colors.primary} />
                                 </View>
                                 <View style={styles.flex1}>
-                                    <Text style={styles.tipTitle}>Today's Tip</Text>
-                                    <Text style={styles.tipText}>Drink at least 8 glasses of water daily to keep your skin hydrated and glowing from within.</Text>
+                                    <Text style={[styles.tipTitle, { color: colors.primary }]}>System Update</Text>
+                                    <Text style={[styles.tipText, { color: '#E2E8F0' }]}>Hydration levels optimal. Maintain daily water intake for peak performance.</Text>
                                 </View>
                             </View>
                         </LinearGradient>
@@ -271,29 +288,31 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             {/* Bottom Nav */}
             <View style={[styles.bottomNav, themeStyles.card]}>
                 <TouchableOpacity style={styles.navItem}>
-                    <Flame size={24} color="#14B8A6" fill="#14B8A6" />
-                    <Text style={styles.navTextActive}>Home</Text>
+                    <Flame size={24} color={colors.primary} fill={colors.primary} />
+                    <Text style={[styles.navTextActive, { color: colors.primary }]}>Home</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Products')} style={styles.navItem}>
-                    <ShoppingBag size={24} color="#9CA3AF" />
-                    <Text style={styles.navText}>Shop</Text>
+                    <ShoppingBag size={24} color={colors.subText} />
+                    <Text style={[styles.navText, { color: colors.subText }]}>Shop</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => navigation.navigate('Camera')}
                     style={styles.fab}
                 >
-                    <Camera size={28} color="white" />
+                    <LinearGradient colors={[colors.primary, colors.secondary]} style={styles.fabGradient}>
+                        <Camera size={28} color={colors.background} />
+                    </LinearGradient>
                 </TouchableOpacity>
                 <TouchableOpacity
                     onPress={() => navigation.navigate('Stats')}
                     style={styles.navItem}
                 >
-                    <TrendingUp size={24} color="#9CA3AF" />
-                    <Text style={styles.navText}>Stats</Text>
+                    <TrendingUp size={24} color={colors.subText} />
+                    <Text style={[styles.navText, { color: colors.subText }]}>Stats</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.navItem}>
-                    <User size={24} color="#9CA3AF" />
-                    <Text style={styles.navText}>Me</Text>
+                    <User size={24} color={colors.subText} />
+                    <Text style={[styles.navText, { color: colors.subText }]}>Me</Text>
                 </TouchableOpacity>
             </View>
         </View>
@@ -309,9 +328,11 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     headerContainer: {
-        borderBottomLeftRadius: 40,
-        borderBottomRightRadius: 40,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
         overflow: 'hidden',
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 229, 255, 0.3)',
     },
     headerGradient: {
         paddingHorizontal: 24,
@@ -364,17 +385,17 @@ const styles = StyleSheet.create({
     premiumBadgeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(0, 0, 0, 0.2)',
+        backgroundColor: 'rgba(255, 0, 60, 0.1)',
         paddingHorizontal: 10,
         paddingVertical: 6,
-        borderRadius: 12,
+        borderRadius: 8,
         marginTop: 8,
         alignSelf: 'flex-start',
         borderWidth: 1,
-        borderColor: 'rgba(255, 215, 0, 0.3)',
+        borderColor: 'rgba(255, 0, 60, 0.5)',
     },
     premiumCountText: {
-        color: '#FFD700',
+        color: '#FF003C',
         fontSize: 12,
         fontWeight: 'bold',
         marginLeft: 6,
@@ -444,13 +465,15 @@ const styles = StyleSheet.create({
         marginTop: -24,
     },
     quickActions: {
-        backgroundColor: 'white',
-        borderRadius: 24,
+        backgroundColor: '#12121A',
+        borderRadius: 16,
         padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
         elevation: 10,
         marginBottom: 24,
         flexDirection: 'row',
@@ -462,7 +485,7 @@ const styles = StyleSheet.create({
     actionIconContainer: {
         width: 56,
         height: 56,
-        borderRadius: 16,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 8,
@@ -495,27 +518,27 @@ const styles = StyleSheet.create({
         flex: 1,
         flexDirection: 'row',
         height: 48,
-        borderRadius: 12,
+        borderRadius: 8,
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
+        borderWidth: 1,
+        borderColor: 'transparent',
     },
     activeTab: {
-        backgroundColor: 'white',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        borderWidth: 1,
     },
     tabText: {
-        fontWeight: '500',
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
+        letterSpacing: 1,
+        fontSize: 12,
     },
     activeTabText: {
-        color: '#111827',
+        color: '#00E5FF',
     },
     inactiveTabText: {
-        color: '#9CA3AF',
+        color: '#475569',
     },
     tasksContainer: {
         gap: 12,
@@ -526,14 +549,11 @@ const styles = StyleSheet.create({
         padding: 20,
     },
     taskCard: {
-        backgroundColor: 'white',
-        borderRadius: 16,
+        backgroundColor: '#12121A',
+        borderRadius: 12,
         padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 255, 255, 0.05)',
         flexDirection: 'row',
         alignItems: 'center',
         gap: 16,
@@ -541,15 +561,18 @@ const styles = StyleSheet.create({
     taskCheck: {
         width: 40,
         height: 40,
-        borderRadius: 20,
+        borderRadius: 12,
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
     },
     taskDone: {
-        backgroundColor: '#10B981',
+        backgroundColor: 'rgba(0, 255, 157, 0.1)',
+        borderColor: '#00FF9D',
     },
     taskPending: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderColor: 'rgba(255, 255, 255, 0.1)',
     },
     checkMark: {
         color: 'white',
@@ -559,7 +582,7 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#D1D5DB',
+        backgroundColor: '#475569',
     },
     taskName: {
         fontSize: 16,
@@ -567,7 +590,7 @@ const styles = StyleSheet.create({
         color: '#1F2937',
     },
     taskNameDone: {
-        color: '#9CA3AF',
+        color: '#475569',
         textDecorationLine: 'line-through',
     },
     taskTime: {
@@ -575,14 +598,11 @@ const styles = StyleSheet.create({
         color: '#6B7280',
     },
     chartCard: {
-        backgroundColor: 'white',
-        borderRadius: 24,
+        backgroundColor: '#12121A',
+        borderRadius: 16,
         padding: 20,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     chartContainer: {
         flexDirection: 'row',
@@ -601,18 +621,29 @@ const styles = StyleSheet.create({
         borderTopRightRadius: 8,
     },
     chartBarActive: {
-        backgroundColor: '#10B981',
+        backgroundColor: '#00E5FF',
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
     },
     chartBarInactive: {
-        backgroundColor: '#E5E7EB',
+        backgroundColor: '#1E293B',
     },
     chartLabel: {
         fontSize: 12,
         color: '#6B7280',
         marginTop: 8,
     },
+    barPercentageText: {
+        fontSize: 9,
+        color: 'white',
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginTop: 2,
+    },
     tipCardContainer: {
-        borderRadius: 24,
+        borderRadius: 12,
         overflow: 'hidden',
         marginBottom: 96,
     },
@@ -626,10 +657,12 @@ const styles = StyleSheet.create({
     tipIconContainer: {
         width: 48,
         height: 48,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255, 255, 255, 0.6)',
+        borderRadius: 12,
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.3)',
     },
     tipTitle: {
         fontWeight: 'bold',
@@ -646,19 +679,21 @@ const styles = StyleSheet.create({
         bottom: 24,
         left: 24,
         right: 24,
-        backgroundColor: 'white',
-        borderRadius: 32,
-        padding: 16,
+        backgroundColor: '#0F0F13',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 10 },
-        shadowOpacity: 0.1,
-        shadowRadius: 20,
-        elevation: 15,
+        paddingHorizontal: 16,
+        paddingBottom: 24,
+        paddingTop: 16,
         borderWidth: 1,
-        borderColor: '#F3F4F6',
+        borderColor: 'rgba(0, 229, 255, 0.2)',
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 16,
+        elevation: 15,
+        borderRadius: 32,
     },
     navItem: {
         alignItems: 'center',
@@ -670,22 +705,29 @@ const styles = StyleSheet.create({
     },
     navTextActive: {
         fontSize: 10,
-        color: '#0D9488',
+        color: '#00E5FF',
         fontWeight: 'bold',
         marginTop: 4,
+        textTransform: 'uppercase',
     },
     fab: {
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: '#10B981',
         alignItems: 'center',
         justifyContent: 'center',
-        marginTop: -40,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 8,
-        elevation: 5,
+        marginTop: -55,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 12,
+        elevation: 10,
+        overflow: 'hidden',
+    },
+    fabGradient: {
+        width: '100%',
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
     },
 });

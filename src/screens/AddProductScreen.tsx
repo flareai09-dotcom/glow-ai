@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, KeyboardAvoidingView, Platform, Alert, ActivityIndicator, StatusBar } from 'react-native';
 import { ChevronLeft, Camera, Link, DollarSign, Tag, Briefcase } from 'lucide-react-native';
 import { useProduct } from '../context/ProductContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
 
 export function AddProductScreen({ navigation }: { navigation: any }) {
     const { addProduct } = useProduct();
@@ -13,6 +14,7 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
     const [image, setImage] = useState('');
     const [affiliateLink, setAffiliateLink] = useState('');
     const [loading, setLoading] = useState(false);
+    const { colors } = useTheme();
 
     const handleSave = async () => {
         if (!name || !brand || !price || !affiliateLink) {
@@ -40,13 +42,22 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
         }
     };
 
+    const themeStyles = {
+        container: { backgroundColor: colors.background },
+        header: { backgroundColor: colors.card, borderBottomColor: colors.border },
+        text: { color: colors.text },
+        subText: { color: colors.subText },
+        input: { backgroundColor: colors.card, borderColor: colors.border, color: colors.text },
+        footer: { backgroundColor: colors.card, borderTopColor: colors.border },
+    };
+
     return (
-        <SafeAreaView style={styles.container}>
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ChevronLeft size={24} color="#1F2937" />
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
+            <View style={[styles.header, themeStyles.header]}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { backgroundColor: colors.background }]}>
+                    <ChevronLeft size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Add New Product</Text>
+                <Text style={[styles.headerTitle, themeStyles.text]}>Add New Product</Text>
                 <View style={{ width: 40 }} />
             </View>
 
@@ -56,22 +67,24 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
             >
                 <ScrollView contentContainerStyle={styles.content}>
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Product Name</Text>
+                        <Text style={[styles.label, themeStyles.text]}>Product Name</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, themeStyles.input]}
                             placeholder="e.g. Vitamin C Serum"
+                            placeholderTextColor={colors.subText}
                             value={name}
                             onChangeText={setName}
                         />
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Brand</Text>
+                        <Text style={[styles.label, themeStyles.text]}>Brand</Text>
                         <View style={styles.inputIconWrapper}>
-                            <Briefcase size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <Briefcase size={20} color={colors.primary} style={styles.inputIcon} />
                             <TextInput
-                                style={[styles.input, styles.inputWithIcon]}
+                                style={[styles.input, styles.inputWithIcon, themeStyles.input]}
                                 placeholder="Brand Name"
+                                placeholderTextColor={colors.subText}
                                 value={brand}
                                 onChangeText={setBrand}
                             />
@@ -80,12 +93,13 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
 
                     <View style={styles.row}>
                         <View style={[styles.formGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Price (₹)</Text>
+                            <Text style={[styles.label, themeStyles.text]}>Price (₹)</Text>
                             <View style={styles.inputIconWrapper}>
-                                <DollarSign size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                <DollarSign size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput
-                                    style={[styles.input, styles.inputWithIcon]}
+                                    style={[styles.input, styles.inputWithIcon, themeStyles.input]}
                                     placeholder="999"
+                                    placeholderTextColor={colors.subText}
                                     keyboardType="numeric"
                                     value={price}
                                     onChangeText={setPrice}
@@ -93,12 +107,13 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
                             </View>
                         </View>
                         <View style={[styles.formGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Category</Text>
+                            <Text style={[styles.label, themeStyles.text]}>Category</Text>
                             <View style={styles.inputIconWrapper}>
-                                <Tag size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                <Tag size={20} color={colors.primary} style={styles.inputIcon} />
                                 <TextInput
-                                    style={[styles.input, styles.inputWithIcon]}
+                                    style={[styles.input, styles.inputWithIcon, themeStyles.input]}
                                     placeholder="Serum"
+                                    placeholderTextColor={colors.subText}
                                     value={category}
                                     onChangeText={setCategory}
                                 />
@@ -107,12 +122,13 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Affiliate Link</Text>
+                        <Text style={[styles.label, themeStyles.text]}>Affiliate Link</Text>
                         <View style={styles.inputIconWrapper}>
-                            <Link size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <Link size={20} color={colors.primary} style={styles.inputIcon} />
                             <TextInput
-                                style={[styles.input, styles.inputWithIcon]}
+                                style={[styles.input, styles.inputWithIcon, themeStyles.input]}
                                 placeholder="https://..."
+                                placeholderTextColor={colors.subText}
                                 value={affiliateLink}
                                 onChangeText={setAffiliateLink}
                                 autoCapitalize="none"
@@ -121,12 +137,13 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
                     </View>
 
                     <View style={styles.formGroup}>
-                        <Text style={styles.label}>Image URL (Optional)</Text>
+                        <Text style={[styles.label, themeStyles.text]}>Image URL (Optional)</Text>
                         <View style={styles.inputIconWrapper}>
-                            <Camera size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <Camera size={20} color={colors.primary} style={styles.inputIcon} />
                             <TextInput
-                                style={[styles.input, styles.inputWithIcon]}
+                                style={[styles.input, styles.inputWithIcon, themeStyles.input]}
                                 placeholder="https://image-url.com..."
+                                placeholderTextColor={colors.subText}
                                 value={image}
                                 onChangeText={setImage}
                                 autoCapitalize="none"
@@ -136,16 +153,16 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
 
                 </ScrollView>
 
-                <View style={styles.footer}>
+                <View style={[styles.footer, themeStyles.footer]}>
                     <TouchableOpacity onPress={handleSave} disabled={loading}>
                         <LinearGradient
-                            colors={['#14B8A6', '#10B981']}
+                            colors={[colors.primary, colors.secondary]}
                             style={styles.saveButton}
                         >
                             {loading ? (
                                 <ActivityIndicator color="white" />
                             ) : (
-                                <Text style={styles.saveButtonText}>Save Product</Text>
+                                <Text style={[styles.saveButtonText, { color: colors.background }]}>Save Product</Text>
                             )}
                         </LinearGradient>
                     </TouchableOpacity>
@@ -158,7 +175,7 @@ export function AddProductScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     flex1: {
         flex: 1,
@@ -169,19 +186,19 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 24,
         paddingVertical: 16,
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: 'rgba(0, 229, 255, 0.2)',
     },
     backButton: {
         padding: 8,
         borderRadius: 12,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: 'rgba(255, 255, 255, 0.1)',
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     content: {
         padding: 24,
@@ -192,18 +209,18 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#374151',
+        color: '#E2E8F0',
         marginBottom: 8,
     },
     input: {
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderRadius: 12,
         paddingHorizontal: 16,
         height: 52,
         fontSize: 15,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
-        color: '#1F2937',
+        borderColor: 'rgba(0, 229, 255, 0.2)',
+        color: '#E2E8F0',
     },
     inputIconWrapper: {
         position: 'relative',
@@ -223,9 +240,9 @@ const styles = StyleSheet.create({
     },
     footer: {
         padding: 24,
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: 'rgba(0, 229, 255, 0.2)',
     },
     saveButton: {
         height: 56,
@@ -234,7 +251,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     saveButtonText: {
-        color: 'white',
+        color: '#09090B',
         fontSize: 16,
         fontWeight: 'bold',
     },

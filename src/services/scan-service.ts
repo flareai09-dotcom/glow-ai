@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import { aiService } from './ai-service';
-import { storageService } from './storage-service-base64';
+import { storageService } from './storage-service';
 import { calculateSkinScore } from '../utils/score-calculator';
 import { compressImage } from '../utils/image-utils';
 import { Scan, ScanCreateInput } from '../types/scan.types';
@@ -35,6 +35,22 @@ export class ScanService {
             // Step 3: Calculate skin score
             console.log('Calculating skin score...');
             const scoreBreakdown = calculateSkinScore(analysis.issues);
+            let finalScore = scoreBreakdown.finalScore;
+
+            // Step 3.5: Stabilize score (compared to last scan)
+            try {
+                const latestScan = await this.getLatestScan(userId);
+                if (latestScan && latestScan.skin_score > 0) {
+                    const diff = Math.abs(finalScore - latestScan.skin_score);
+                    if (diff > 8) {
+                        console.log(`Stabilizing score: New(${finalScore}) vs Last(${latestScan.skin_score}). Diff is ${diff}pts.`);
+                        finalScore = Math.round((finalScore + latestScan.skin_score) / 2);
+                        console.log(`Averaged stabilized score: ${finalScore}`);
+                    }
+                }
+            } catch (stabilizeError) {
+                console.error('Score stabilization failed (non-critical):', stabilizeError);
+            }
 
             // Step 4: Save to database
             console.log('Saving to database...');
@@ -42,9 +58,11 @@ export class ScanService {
                 user_id: userId,
                 image_url: imageUrl,
                 thumbnail_url: thumbnailUrl,
-                skin_score: scoreBreakdown.finalScore,
+                skin_score: finalScore,
                 issues: analysis.issues,
                 remedies: analysis.remedies,
+                routine_suggestions: analysis.routine_suggestions,
+                product_ingredients: analysis.product_ingredients,
                 analysis_summary: analysis.summary,
             };
 
@@ -211,28 +229,103 @@ export class ScanService {
                 return this.getMockWeeklyData();
             }
 
-            // Group by day and average scores
+            // Initialize Monday-to-Sunday order
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
             const scoresByDay = new Map<string, number[]>();
 
+            // Get the current week's Monday
+            const today = new Date();
+            const currentDay = today.getDay(); // 0 (Sun) to 6 (Sat)
+            const diffToMonday = currentDay === 0 ? 6 : currentDay - 1; // Distance from Monday
+
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - diffToMonday);
+            monday.setHours(0, 0, 0, 0);
+
+            const weekDayOrder: string[] = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                weekDayOrder.push(dayNames[d.getDay()]);
+            }
+
+            // Fill with real data
             data.forEach((scan: any) => {
                 const date = new Date(scan.created_at);
-                const dayName = date.toLocaleDateString('en-US', { weekday: 'short' });
-
+                const dayName = dayNames[date.getDay()];
                 if (!scoresByDay.has(dayName)) {
                     scoresByDay.set(dayName, []);
                 }
                 scoresByDay.get(dayName)!.push(scan.skin_score);
             });
 
-            // Calculate averages
-            const result = Array.from(scoresByDay.entries()).map(([day, scores]) => ({
-                day,
-                score: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
+            // Map in Monday-Sunday order
+            return weekDayOrder.map(dayName => ({
+                day: dayName,
+                score: scoresByDay.has(dayName)
+                    ? Math.max(...scoresByDay.get(dayName)!)
+                    : 0
             }));
+        } catch (error) {
+            console.error('Error fetching weekly scores:', error);
+            return this.getMockWeeklyData();
+        }
+    }
+
+    /**
+     * Get the highest skin score recorded by ANY user for each of the last 7 days
+     */
+    async getGlobalHighestScores(): Promise<{ day: string; score: number }[]> {
+        try {
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const today = new Date();
+            const currentDay = today.getDay();
+            const diffToMonday = currentDay === 0 ? 6 : currentDay - 1;
+
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - diffToMonday);
+            monday.setHours(0, 0, 0, 0);
+
+            const { data, error } = await supabase
+                .from('scans')
+                .select('skin_score, created_at')
+                .gte('created_at', monday.toISOString())
+                .order('created_at', { ascending: true });
+
+            if (error) throw error;
+
+            const maxScoresByDay = new Map<string, number>();
+
+            // Process data to find max per day
+            data?.forEach((scan: any) => {
+                const date = new Date(scan.created_at);
+                const dayName = dayNames[date.getDay()];
+                const currentMax = maxScoresByDay.get(dayName) || 0;
+                if (scan.skin_score > currentMax) {
+                    maxScoresByDay.set(dayName, scan.skin_score);
+                }
+            });
+
+            // Construct Monday-Sunday result
+            const result = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const dayName = dayNames[d.getDay()];
+                result.push({
+                    day: dayName,
+                    score: maxScoresByDay.get(dayName) || 0
+                });
+            }
+
+            // Ensure there's at least some benchmark data (simulated if db is empty)
+            if (result.every(r => r.score === 0)) {
+                return result.map((r, i) => ({ ...r, score: 85 + (i % 3) })); // Default benchmark
+            }
 
             return result;
         } catch (error) {
-            console.error('Error fetching weekly scores:', error);
+            console.error('Error fetching global highest scores:', error);
             return this.getMockWeeklyData();
         }
     }

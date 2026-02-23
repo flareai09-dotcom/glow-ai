@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { supabase } from '../lib/supabase';
+import { useAuth } from './AuthContext';
 
 export interface RoutineTask {
     id: string;
@@ -18,128 +19,243 @@ interface RoutineContextType {
     resetDailyTasks: () => void;
 }
 
-const defaultMorning: RoutineTask[] = [
-    { id: 'm1', name: 'Cleanser', completed: false, time: '7:30 AM', category: 'morning' },
-    { id: 'm2', name: 'Toner', completed: false, time: '7:35 AM', category: 'morning' },
-    { id: 'm3', name: 'Serum', completed: false, time: '7:40 AM', category: 'morning' },
-    { id: 'm4', name: 'Moisturizer', completed: false, time: '7:45 AM', category: 'morning' },
-    { id: 'm5', name: 'Sunscreen', completed: false, time: '7:50 AM', category: 'morning' },
-];
-
-const defaultNight: RoutineTask[] = [
-    { id: 'n1', name: 'Cleanser', completed: false, time: '9:00 PM', category: 'night' },
-    { id: 'n2', name: 'Toner', completed: false, time: '9:05 PM', category: 'night' },
-    { id: 'n3', name: 'Treatment', completed: false, time: '9:10 PM', category: 'night' },
-    { id: 'n4', name: 'Night Cream', completed: false, time: '9:15 PM', category: 'night' },
+const defaultTasks = [
+    { name: 'Cleanser', category: 'morning', time: '7:30 AM' },
+    { name: 'Toner', category: 'morning', time: '7:35 AM' },
+    { name: 'Serum', category: 'morning', time: '7:40 AM' },
+    { name: 'Moisturizer', category: 'morning', time: '7:45 AM' },
+    { name: 'Sunscreen', category: 'morning', time: '7:50 AM' },
+    { name: 'Cleanser', category: 'night', time: '9:00 PM' },
+    { name: 'Toner', category: 'night', time: '9:05 PM' },
+    { name: 'Treatment', category: 'night', time: '9:10 PM' },
+    { name: 'Night Cream', category: 'night', time: '9:15 PM' },
 ];
 
 const RoutineContext = createContext<RoutineContextType | undefined>(undefined);
 
 export const RoutineProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [morningTasks, setMorningTasks] = useState<RoutineTask[]>(defaultMorning);
-    const [nightTasks, setNightTasks] = useState<RoutineTask[]>(defaultNight);
-    const [lastOpened, setLastOpened] = useState<string>('');
+    const { user } = useAuth();
+    const [morningTasks, setMorningTasks] = useState<RoutineTask[]>([]);
+    const [nightTasks, setNightTasks] = useState<RoutineTask[]>([]);
 
     useEffect(() => {
-        loadRoutine();
-    }, []);
+        if (user?.id) {
+            loadRoutine();
+        } else {
+            setMorningTasks([]);
+            setNightTasks([]);
+        }
+    }, [user?.id]);
 
     const loadRoutine = async () => {
+        if (!user?.id) return;
         try {
-            const storedMorning = await AsyncStorage.getItem('morning_routine');
-            const storedNight = await AsyncStorage.getItem('night_routine');
-            const storedDate = await AsyncStorage.getItem('last_routine_date');
+            // Fetch tasks
+            const { data: tasksData, error: tasksError } = await supabase
+                .from('routine_tasks')
+                .select('*')
+                .eq('user_id', user.id)
+                .order('time', { ascending: true });
 
-            const today = new Date().toDateString();
+            if (tasksError) throw tasksError;
 
-            if (storedDate !== today) {
-                // New day, reset completion but keep structure if customized users exist
-                // For now just reset default structure if it's a new day or if nothing stored
-                // In a real app we'd keep the list but reset 'completed' to false
-                if (storedMorning) {
-                    const parsedM = JSON.parse(storedMorning);
-                    setMorningTasks(parsedM.map((t: RoutineTask) => ({ ...t, completed: false })));
-                }
-                if (storedNight) {
-                    const parsedN = JSON.parse(storedNight);
-                    setNightTasks(parsedN.map((t: RoutineTask) => ({ ...t, completed: false })));
-                }
-                setLastOpened(today);
-                await AsyncStorage.setItem('last_routine_date', today);
-            } else {
-                if (storedMorning) setMorningTasks(JSON.parse(storedMorning));
-                if (storedNight) setNightTasks(JSON.parse(storedNight));
+            // Handle new user default tasks
+            let allTasks = tasksData || [];
+            if (allTasks.length === 0) {
+                const newTasks = defaultTasks.map(t => ({
+                    user_id: user.id,
+                    name: t.name,
+                    category: t.category,
+                    time: t.time,
+                    is_default: true
+                }));
+                const { data: insertedData, error: insertError } = await supabase
+                    .from('routine_tasks')
+                    .insert(newTasks)
+                    .select('*');
+                if (insertError) throw insertError;
+                allTasks = insertedData || [];
             }
 
+            // Fetch today's log for completions
+            const today = new Date().toISOString().split('T')[0];
+            const { data: logData, error: logError } = await supabase
+                .from('routine_logs')
+                .select('completed_task_ids')
+                .eq('user_id', user.id)
+                .eq('date', today)
+                .maybeSingle();
+
+            if (logError && logError.code !== 'PGRST116') throw logError;
+
+            const completedIds = logData?.completed_task_ids || [];
+
+            const mTasks: RoutineTask[] = [];
+            const nTasks: RoutineTask[] = [];
+
+            allTasks.forEach((t: any) => {
+                const rt: RoutineTask = {
+                    id: t.id,
+                    name: t.name,
+                    category: t.category as 'morning' | 'night',
+                    time: t.time,
+                    completed: completedIds.includes(t.id)
+                };
+                if (rt.category === 'morning') mTasks.push(rt);
+                else nTasks.push(rt);
+            });
+
+            setMorningTasks(mTasks);
+            setNightTasks(nTasks);
+
         } catch (error) {
-            console.error('Failed to load routine', error);
+            console.error('Failed to load routine from Supabase', error);
         }
     };
 
-    const saveRoutine = async (m: RoutineTask[], n: RoutineTask[]) => {
+    const updateLog = async (completedId: string, isAdding: boolean) => {
+        if (!user?.id) return;
+        const today = new Date().toISOString().split('T')[0];
+
         try {
-            await AsyncStorage.setItem('morning_routine', JSON.stringify(m));
-            await AsyncStorage.setItem('night_routine', JSON.stringify(n));
+            // Get current log
+            const { data: logData, error: logError } = await supabase
+                .from('routine_logs')
+                .select('id, completed_task_ids')
+                .eq('user_id', user.id)
+                .eq('date', today)
+                .maybeSingle();
+
+            if (logError && logError.code !== 'PGRST116') throw logError;
+
+            let newIds = logData?.completed_task_ids || [];
+
+            if (isAdding) {
+                if (!newIds.includes(completedId)) newIds.push(completedId);
+            } else {
+                newIds = newIds.filter((i: string) => i !== completedId);
+            }
+
+            const totalCount = morningTasks.length + nightTasks.length;
+            const completionRate = totalCount > 0 ? Math.round((newIds.length / totalCount) * 100) : 0;
+
+            if (logData) {
+                // Update
+                await supabase.from('routine_logs').update({
+                    completed_task_ids: newIds,
+                    completion_rate: completionRate
+                }).eq('id', logData.id);
+            } else {
+                // Insert
+                await supabase.from('routine_logs').insert([{
+                    user_id: user.id,
+                    date: today,
+                    completed_task_ids: newIds,
+                    completion_rate: completionRate
+                }]);
+            }
         } catch (error) {
-            console.error('Failed to save routine', error);
+            console.error('Error updating routine log:', error);
         }
     };
 
-    const toggleTask = (id: string, category: 'morning' | 'night') => {
-        if (category === 'morning') {
-            const updated = morningTasks.map(t =>
-                t.id === id ? { ...t, completed: !t.completed } : t
-            );
-            setMorningTasks(updated);
-            saveRoutine(updated, nightTasks);
-        } else {
-            const updated = nightTasks.map(t =>
-                t.id === id ? { ...t, completed: !t.completed } : t
-            );
-            setNightTasks(updated);
-            saveRoutine(morningTasks, updated);
-        }
-    };
-
-    const addTask = (name: string, category: 'morning' | 'night', time?: string) => {
-        const newTask: RoutineTask = {
-            id: Date.now().toString(),
-            name,
-            completed: false,
-            time: time || (category === 'morning' ? '8:00 AM' : '9:00 PM'),
-            category
-        };
+    const toggleTask = async (id: string, category: 'morning' | 'night') => {
+        let isNowCompleted = false;
 
         if (category === 'morning') {
-            const updated = [...morningTasks, newTask];
+            const updated = morningTasks.map(t => {
+                if (t.id === id) {
+                    isNowCompleted = !t.completed;
+                    return { ...t, completed: isNowCompleted };
+                }
+                return t;
+            });
             setMorningTasks(updated);
-            saveRoutine(updated, nightTasks);
         } else {
-            const updated = [...nightTasks, newTask];
+            const updated = nightTasks.map(t => {
+                if (t.id === id) {
+                    isNowCompleted = !t.completed;
+                    return { ...t, completed: isNowCompleted };
+                }
+                return t;
+            });
             setNightTasks(updated);
-            saveRoutine(morningTasks, updated);
+        }
+
+        await updateLog(id, isNowCompleted);
+    };
+
+    const addTask = async (name: string, category: 'morning' | 'night', time?: string) => {
+        if (!user?.id) return;
+        try {
+            const { data, error } = await supabase
+                .from('routine_tasks')
+                .insert([{
+                    user_id: user.id,
+                    name,
+                    category,
+                    time: time || (category === 'morning' ? '8:00 AM' : '9:00 PM'),
+                    is_default: false
+                }])
+                .select('*')
+                .single();
+
+            if (error) throw error;
+
+            const newTask: RoutineTask = {
+                id: data.id,
+                name: data.name,
+                completed: false,
+                time: data.time,
+                category: data.category
+            };
+
+            if (category === 'morning') {
+                setMorningTasks([...morningTasks, newTask]);
+            } else {
+                setNightTasks([...nightTasks, newTask]);
+            }
+        } catch (error) {
+            console.error('Error adding task:', error);
         }
     };
 
-    const removeTask = (id: string, category: 'morning' | 'night') => {
-        if (category === 'morning') {
-            const updated = morningTasks.filter(t => t.id !== id);
-            setMorningTasks(updated);
-            saveRoutine(updated, nightTasks);
-        } else {
-            const updated = nightTasks.filter(t => t.id !== id);
-            setNightTasks(updated);
-            saveRoutine(morningTasks, updated);
+    const removeTask = async (id: string, category: 'morning' | 'night') => {
+        if (!user?.id) return;
+        try {
+            const { error } = await supabase
+                .from('routine_tasks')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            if (category === 'morning') {
+                setMorningTasks(morningTasks.filter(t => t.id !== id));
+            } else {
+                setNightTasks(nightTasks.filter(t => t.id !== id));
+            }
+        } catch (error) {
+            console.error('Error removing task:', error);
         }
     };
 
-    // Explicit reset for debugging or manual trigger
-    const resetDailyTasks = () => {
+    const resetDailyTasks = async () => {
+        if (!user?.id) return;
         const m = morningTasks.map(t => ({ ...t, completed: false }));
         const n = nightTasks.map(t => ({ ...t, completed: false }));
         setMorningTasks(m);
         setNightTasks(n);
-        saveRoutine(m, n);
+
+        const today = new Date().toISOString().split('T')[0];
+        try {
+            await supabase.from('routine_logs').update({
+                completed_task_ids: [],
+                completion_rate: 0
+            }).eq('user_id', user.id).eq('date', today);
+        } catch (error) {
+            console.error('Error resetting routine:', error);
+        }
     };
 
     return (

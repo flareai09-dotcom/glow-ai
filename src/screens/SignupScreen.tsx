@@ -4,9 +4,24 @@ import { Mail, Lock, Eye, EyeOff, User, ArrowLeft, Phone } from 'lucide-react-na
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 export function SignupScreen({ navigation }: { navigation: any }) {
     const { signUp, signUpWithPhone } = useAuth();
+    const { colors } = useTheme();
+
+    const themeStyles = {
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        subText: { color: colors.subText },
+        primaryText: { color: colors.primary },
+        toggleContainer: { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}33` },
+        toggleActive: { backgroundColor: colors.card, borderColor: `${colors.primary}4D`, shadowColor: colors.primary },
+        toggleTextActive: { color: colors.primary },
+        inputContainer: { backgroundColor: colors.card, borderColor: `${colors.primary}33` },
+        link: { color: colors.primary },
+        headerIconBtn: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary },
+    };
 
     const [signupType, setSignupType] = useState<'email' | 'phone'>('email');
     const [fullName, setFullName] = useState('');
@@ -39,16 +54,20 @@ export function SignupScreen({ navigation }: { navigation: any }) {
         setLoading(false);
 
         if (success) {
-            Alert.alert('Account Created', 'Your account has been created successfully!');
+            Alert.alert(
+                'Account Created',
+                'Your account has been created successfully! Welcome to Glow AI.',
+                [{ text: 'Great!', onPress: () => { } }]
+            );
         }
     };
 
     return (
-        <View style={styles.container}>
-            <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.container, themeStyles.container]}>
+            <SafeAreaView style={[styles.safeArea, { paddingTop: Platform.OS === 'android' ? 24 : 0 }]}>
                 <View style={styles.headerNav}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <ArrowLeft size={24} color="#374151" />
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, themeStyles.headerIconBtn]}>
+                        <ArrowLeft size={24} color={colors.text} />
                     </TouchableOpacity>
                 </View>
 
@@ -58,34 +77,34 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                 >
                     <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                         <Animatable.View animation="fadeInLeft" style={styles.header}>
-                            <Text style={styles.title}>Create Account</Text>
-                            <Text style={styles.subtitle}>Start your skincare journey today</Text>
+                            <Text style={[styles.title, themeStyles.text]}>Create Account</Text>
+                            <Text style={[styles.subtitle, themeStyles.subText]}>Start your skincare journey today</Text>
                         </Animatable.View>
 
                         {/* Signup Type Toggle */}
-                        <View style={styles.toggleContainer}>
+                        <View style={[styles.toggleContainer, themeStyles.toggleContainer]}>
                             <TouchableOpacity
-                                style={[styles.toggleButton, signupType === 'email' && styles.toggleActive]}
+                                style={[styles.toggleButton, signupType === 'email' && [styles.toggleActive, themeStyles.toggleActive]]}
                                 onPress={() => { setSignupType('email'); setIdentifier(''); }}
                             >
-                                <Text style={[styles.toggleText, signupType === 'email' && styles.toggleTextActive]}>Email</Text>
+                                <Text style={[styles.toggleText, themeStyles.subText, signupType === 'email' && [styles.toggleTextActive, themeStyles.toggleTextActive]]}>Email</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.toggleButton, signupType === 'phone' && styles.toggleActive]}
+                                style={[styles.toggleButton, signupType === 'phone' && [styles.toggleActive, themeStyles.toggleActive]]}
                                 onPress={() => { setSignupType('phone'); setIdentifier(''); }}
                             >
-                                <Text style={[styles.toggleText, signupType === 'phone' && styles.toggleTextActive]}>Phone</Text>
+                                <Text style={[styles.toggleText, themeStyles.subText, signupType === 'phone' && [styles.toggleTextActive, themeStyles.toggleTextActive]]}>Phone</Text>
                             </TouchableOpacity>
                         </View>
 
                         <Animatable.View animation="fadeInUp" delay={200} style={styles.form}>
                             {/* Name Input */}
-                            <View style={styles.inputContainer}>
-                                <User size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <View style={[styles.inputContainer, themeStyles.inputContainer]}>
+                                <User size={20} color={colors.subText} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, themeStyles.text]}
                                     placeholder="Full Name"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={colors.subText}
                                     value={fullName}
                                     onChangeText={setFullName}
                                     autoCapitalize="words"
@@ -93,16 +112,16 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                             </View>
 
                             {/* Identifier Input */}
-                            <View style={styles.inputContainer}>
+                            <View style={[styles.inputContainer, themeStyles.inputContainer]}>
                                 {signupType === 'email' ? (
-                                    <Mail size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                    <Mail size={20} color={colors.subText} style={styles.inputIcon} />
                                 ) : (
-                                    <Phone size={20} color="#9CA3AF" style={styles.inputIcon} />
+                                    <Phone size={20} color={colors.subText} style={styles.inputIcon} />
                                 )}
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, themeStyles.text]}
                                     placeholder={signupType === 'email' ? "Email Address" : "Phone Number (+91...)"}
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={colors.subText}
                                     value={identifier}
                                     onChangeText={setIdentifier}
                                     autoCapitalize="none"
@@ -111,12 +130,12 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                             </View>
 
                             {/* Password Input */}
-                            <View style={styles.inputContainer}>
-                                <Lock size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <View style={[styles.inputContainer, themeStyles.inputContainer]}>
+                                <Lock size={20} color={colors.subText} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, themeStyles.text]}
                                     placeholder="Password"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={colors.subText}
                                     value={password}
                                     onChangeText={setPassword}
                                     secureTextEntry={!showPassword}
@@ -124,20 +143,20 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                                 />
                                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
                                     {showPassword ? (
-                                        <EyeOff size={20} color="#9CA3AF" />
+                                        <EyeOff size={20} color={colors.subText} />
                                     ) : (
-                                        <Eye size={20} color="#9CA3AF" />
+                                        <Eye size={20} color={colors.subText} />
                                     )}
                                 </TouchableOpacity>
                             </View>
 
                             {/* Confirm Password Input */}
-                            <View style={styles.inputContainer}>
-                                <Lock size={20} color="#9CA3AF" style={styles.inputIcon} />
+                            <View style={[styles.inputContainer, themeStyles.inputContainer]}>
+                                <Lock size={20} color={colors.subText} style={styles.inputIcon} />
                                 <TextInput
-                                    style={styles.input}
+                                    style={[styles.input, themeStyles.text]}
                                     placeholder="Confirm Password"
-                                    placeholderTextColor="#9CA3AF"
+                                    placeholderTextColor={colors.subText}
                                     value={confirmPassword}
                                     onChangeText={setConfirmPassword}
                                     secureTextEntry={true}
@@ -146,12 +165,12 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                             </View>
 
                             <TouchableOpacity
-                                style={styles.signupButton}
+                                style={[styles.signupButton, { shadowColor: colors.primary }]}
                                 onPress={handleSignup}
                                 disabled={loading}
                             >
                                 <LinearGradient
-                                    colors={['#14B8A6', '#10B981']}
+                                    colors={[colors.primary, colors.secondary]}
                                     start={{ x: 0, y: 0 }}
                                     end={{ x: 1, y: 0 }}
                                     style={styles.gradientButton}
@@ -165,9 +184,9 @@ export function SignupScreen({ navigation }: { navigation: any }) {
                             </TouchableOpacity>
 
                             <View style={styles.footer}>
-                                <Text style={styles.footerText}>Already have an account? </Text>
+                                <Text style={[styles.footerText, themeStyles.subText]}>Already have an account? </Text>
                                 <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-                                    <Text style={styles.loginLink}>Log In</Text>
+                                    <Text style={[styles.loginLink, themeStyles.link]}>Log In</Text>
                                 </TouchableOpacity>
                             </View>
                         </Animatable.View>
@@ -181,7 +200,7 @@ export function SignupScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     safeArea: {
         flex: 1,
@@ -194,12 +213,14 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         alignItems: 'center',
         justifyContent: 'center',
-        shadowColor: '#000',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
     },
@@ -218,19 +239,21 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 32,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: '#6B7280',
+        color: '#94A3B8',
     },
     toggleContainer: {
         flexDirection: 'row',
-        backgroundColor: 'rgba(20, 184, 166, 0.05)',
+        backgroundColor: 'rgba(0, 229, 255, 0.05)',
         borderRadius: 12,
         padding: 4,
         marginBottom: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     toggleButton: {
         flex: 1,
@@ -239,20 +262,22 @@ const styles = StyleSheet.create({
         borderRadius: 10,
     },
     toggleActive: {
-        backgroundColor: 'white',
-        shadowColor: '#000',
+        backgroundColor: '#12121A',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.2,
         shadowRadius: 4,
         elevation: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.3)',
     },
     toggleText: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#6B7280',
+        color: '#475569',
     },
     toggleTextActive: {
-        color: '#14B8A6',
+        color: '#00E5FF',
     },
     form: {
         width: '100%',
@@ -260,18 +285,13 @@ const styles = StyleSheet.create({
     inputContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'white',
-        borderRadius: 16,
+        backgroundColor: '#12121A',
+        borderRadius: 12,
         paddingHorizontal: 16,
         height: 56,
         marginBottom: 16,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     inputIcon: {
         marginRight: 12,
@@ -280,12 +300,12 @@ const styles = StyleSheet.create({
         flex: 1,
         height: '100%',
         fontSize: 16,
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     signupButton: {
-        borderRadius: 16,
+        borderRadius: 12,
         overflow: 'hidden',
-        shadowColor: '#14B8A6',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 10,
@@ -309,11 +329,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     footerText: {
-        color: '#6B7280',
+        color: '#94A3B8',
         fontSize: 14,
     },
     loginLink: {
-        color: '#14B8A6',
+        color: '#00E5FF',
         fontSize: 14,
         fontWeight: 'bold',
     },

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Dimensions, Alert, ActivityIndicator, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Dimensions, Alert, ActivityIndicator, Modal, Platform, StatusBar } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { ChevronLeft, Check, Crown, Star, Zap } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../context/AuthContext';
 import { profileService } from '../services/profile-service';
+import { useTheme } from '../context/ThemeContext';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,6 +20,20 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
     const { user } = useAuth();
     const [loading, setLoading] = useState(false);
     const [showGateway, setShowGateway] = useState(false);
+    const { colors } = useTheme();
+
+    const themeStyles = {
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        card: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary },
+        subText: { color: colors.subText },
+        primaryText: { color: colors.primary },
+        primaryLight: { backgroundColor: `${colors.primary}1A` },
+        footer: { backgroundColor: colors.background, borderTopColor: colors.border },
+        activePlan: { borderColor: colors.primary, backgroundColor: `${colors.primary}0D`, shadowColor: colors.primary },
+        iconContainer: { backgroundColor: colors.card },
+        badgeText: { color: colors.primary },
+    };
 
     const confirmSubscription = async (paymentId: string) => {
         try {
@@ -90,7 +105,7 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
                         "contact": ""
                     },
                     "theme": {
-                        "color": "#14B8A6"
+                        "color": "#FF003C"
                     },
                     "modal": {
                         "ondismiss": function(){
@@ -112,7 +127,7 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
     `;
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, themeStyles.container]}>
             <Modal
                 visible={showGateway}
                 onRequestClose={() => setShowGateway(false)}
@@ -137,10 +152,10 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 <LinearGradient
-                    colors={['#14B8A6', '#0D9488']}
+                    colors={[colors.primary, colors.secondary]}
                     style={styles.header}
                 >
-                    <SafeAreaView>
+                    <SafeAreaView style={{ paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }}>
                         <View style={styles.navBar}>
                             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                                 <ChevronLeft size={24} color="white" />
@@ -149,49 +164,49 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
                     </SafeAreaView>
 
                     <View style={styles.headerContent}>
-                        <View style={styles.iconContainer}>
+                        <View style={[styles.iconContainer, themeStyles.iconContainer]}>
                             <Crown size={48} color="#FBBF24" fill="#FBBF24" />
                         </View>
                         <Text style={styles.title}>Glow AI Premium</Text>
-                        <Text style={styles.subtitle}>Unlock your best skin ever</Text>
+                        <Text style={[styles.subtitle, { color: 'rgba(255,255,255,0.8)' }]}>Unlock your best skin ever</Text>
                     </View>
                 </LinearGradient>
 
                 <View style={styles.content}>
-                    <View style={styles.featuresCard}>
+                    <View style={[styles.featuresCard, themeStyles.card]}>
                         {features.map((feature, index) => (
                             <View key={index} style={styles.featureItem}>
-                                <View style={styles.featureIcon}>
-                                    <feature.icon size={20} color="#0D9488" />
+                                <View style={[styles.featureIcon, themeStyles.primaryLight]}>
+                                    <feature.icon size={20} color={colors.primary} />
                                 </View>
-                                <Text style={styles.featureText}>{feature.text}</Text>
+                                <Text style={[styles.featureText, themeStyles.text]}>{feature.text}</Text>
                             </View>
                         ))}
                     </View>
 
                     <View style={styles.pricingContainer}>
-                        <TouchableOpacity style={[styles.planCard, styles.activePlan]}>
+                        <TouchableOpacity style={[styles.planCard, themeStyles.card, themeStyles.activePlan]}>
                             <View style={styles.planHeader}>
-                                <Text style={styles.planDuration}>Lifetime Access</Text>
-                                <View style={styles.badge}>
-                                    <Text style={styles.badgeText}>BEST VALUE</Text>
+                                <Text style={[styles.planDuration, themeStyles.text]}>Lifetime Access</Text>
+                                <View style={[styles.badge, themeStyles.primaryLight]}>
+                                    <Text style={[styles.badgeText, themeStyles.badgeText]}>BEST VALUE</Text>
                                 </View>
                             </View>
-                            <Text style={styles.price}>₹99<Text style={styles.perMonth}>/one-time</Text></Text>
-                            <Text style={styles.trialText}>Unlock all premium features forever</Text>
+                            <Text style={[styles.price, themeStyles.text]}>₹99<Text style={[styles.perMonth, themeStyles.subText]}>/one-time</Text></Text>
+                            <Text style={[styles.trialText, themeStyles.subText]}>Unlock all premium features forever</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
             </ScrollView>
 
-            <View style={styles.footer}>
+            <View style={[styles.footer, themeStyles.footer]}>
                 <TouchableOpacity
                     style={styles.subscribeButton}
                     onPress={handleSubscribe}
                     disabled={loading}
                 >
                     <LinearGradient
-                        colors={['#FBBF24', '#D97706']}
+                        colors={[colors.primary, colors.secondary]}
                         style={styles.gradientButton}
                     >
                         {loading ? (
@@ -201,7 +216,7 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
                         )}
                     </LinearGradient>
                 </TouchableOpacity>
-                <Text style={styles.footerText}>Cancel anytime. Terms apply.</Text>
+                <Text style={[styles.footerText, themeStyles.subText]}>Cancel anytime. Terms apply.</Text>
             </View>
         </View>
     );
@@ -210,7 +225,7 @@ export function PremiumScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     modalHeader: {
         flexDirection: 'row',
@@ -259,40 +274,44 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 16,
-        shadowColor: '#000',
+        shadowColor: '#FBBF24',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 6,
+        borderWidth: 1,
+        borderColor: 'rgba(251, 191, 36, 0.4)',
     },
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: 'white',
+        color: '#E2E8F0',
         marginBottom: 8,
     },
     subtitle: {
         fontSize: 16,
-        color: 'rgba(255,255,255,0.9)',
+        color: '#94A3B8',
     },
     content: {
         padding: 24,
         marginTop: -30,
     },
     featuresCard: {
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderRadius: 24,
         padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
         marginBottom: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     featureItem: {
         flexDirection: 'row',
@@ -304,24 +323,24 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#F0FDFA',
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
     },
     featureText: {
         fontSize: 15,
-        color: '#374151',
+        color: '#E2E8F0',
         fontWeight: '500',
     },
     pricingContainer: {
         gap: 16,
     },
     planCard: {
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderRadius: 24,
         padding: 20,
         borderWidth: 2,
-        borderColor: '#14B8A6',
+        borderColor: '#00E5FF',
         position: 'relative',
     },
     yearlyPlan: {
@@ -336,10 +355,10 @@ const styles = StyleSheet.create({
     planDuration: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     badge: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: 'rgba(0, 229, 255, 0.2)',
         paddingHorizontal: 8,
         paddingVertical: 4,
         borderRadius: 8,
@@ -348,31 +367,31 @@ const styles = StyleSheet.create({
         backgroundColor: '#10B981',
     },
     badgeText: {
-        color: 'white',
+        color: '#00E5FF',
         fontSize: 10,
         fontWeight: 'bold',
     },
     price: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
         alignItems: 'flex-end',
     },
     perMonth: {
         fontSize: 14,
-        color: '#6B7280',
+        color: '#94A3B8',
         fontWeight: 'normal',
     },
     trialText: {
         fontSize: 12,
-        color: '#6B7280',
+        color: '#94A3B8',
         marginTop: 4,
     },
     footer: {
         padding: 24,
-        backgroundColor: 'white',
+        backgroundColor: '#0F0F13',
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: 'rgba(0, 229, 255, 0.2)',
     },
     subscribeButton: {
         marginBottom: 12,
@@ -390,15 +409,15 @@ const styles = StyleSheet.create({
     footerText: {
         textAlign: 'center',
         fontSize: 12,
-        color: '#9CA3AF',
+        color: '#94A3B8',
     },
     activePlan: {
-        borderColor: '#14B8A6',
-        backgroundColor: '#F0FDFA',
-        shadowColor: '#14B8A6',
+        borderColor: '#00E5FF',
+        backgroundColor: 'rgba(0, 229, 255, 0.05)',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
+        shadowOpacity: 0.3,
         shadowRadius: 8,
-        elevation: 4,
+        elevation: 5,
     }
 });

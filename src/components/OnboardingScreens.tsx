@@ -15,19 +15,19 @@ const onboardingData = [
         icon: Scan,
         title: "AI-Powered Skin Analysis",
         description: "Get instant insights into your skin health with our advanced AI technology. Detect acne, dark spots, and more.",
-        colors: ['#14B8A6', '#10B981'],
+        colors: ['#00E5FF', '#007BFF'],
     },
     {
         icon: Sparkles,
         title: "Personalized Skincare Routine",
         description: "Receive customized routines tailored to your unique skin type and concerns. Science-backed recommendations.",
-        colors: ['#F5D5CB', '#D1E3D1'],
+        colors: ['#FF003C', '#9D00FF'],
     },
     {
         icon: IndianRupee,
         title: "₹99 Lifetime Premium",
         description: "Unlock unlimited scans, detailed analysis, and expert product recommendations. One-time payment, lifetime access.",
-        colors: ['#10B981', '#14B8A6'],
+        colors: ['#00FF9D', '#00E5FF'],
     },
 ] as const;
 
@@ -86,13 +86,13 @@ export function OnboardingScreens({ currentStep, onNext, onSkip }: OnboardingScr
                 {/* Next button */}
                 <TouchableOpacity onPress={onNext} activeOpacity={0.8}>
                     <LinearGradient
-                        colors={['#14B8A6', '#10B981']}
+                        colors={['#00E5FF', '#007BFF']}
                         style={styles.nextButton}
                     >
                         <Text style={styles.nextButtonText}>
                             {currentStep === 2 ? 'Get Started' : 'Continue'}
                         </Text>
-                        <ChevronRight size={20} color="white" />
+                        <ChevronRight size={20} color="#09090B" />
                     </LinearGradient>
                 </TouchableOpacity>
             </View>
@@ -103,7 +103,7 @@ export function OnboardingScreens({ currentStep, onNext, onSkip }: OnboardingScr
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     skipContainer: {
         flexDirection: 'row',
@@ -112,7 +112,7 @@ const styles = StyleSheet.create({
         paddingTop: 16,
     },
     skipText: {
-        color: '#6B7280',
+        color: '#94A3B8',
         fontSize: 14,
     },
     content: {
@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 32,
-        shadowColor: '#000',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.15,
         shadowRadius: 16,
@@ -140,14 +140,14 @@ const styles = StyleSheet.create({
     title: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
         marginBottom: 16,
         textAlign: 'center',
         maxWidth: 320,
     },
     description: {
         fontSize: 16,
-        color: '#6B7280',
+        color: '#94A3B8',
         lineHeight: 24,
         textAlign: 'center',
         maxWidth: 340,
@@ -168,11 +168,11 @@ const styles = StyleSheet.create({
     },
     dotActive: {
         width: 32,
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
     },
     dotInactive: {
         width: 8,
-        backgroundColor: '#D1D5DB',
+        backgroundColor: 'rgba(0, 229, 255, 0.2)',
     },
     nextButton: {
         height: 56,
@@ -181,14 +181,14 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        shadowColor: '#000',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.1,
         shadowRadius: 8,
         elevation: 4,
     },
     nextButtonText: {
-        color: 'white',
+        color: '#09090B',
         fontSize: 16,
         fontWeight: 'bold',
     },

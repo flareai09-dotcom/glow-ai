@@ -14,18 +14,26 @@ export class AIService {
             // Convert image to base64
             const base64Image = await imageToBase64(imageUri);
 
-            // Call Supabase Edge Function
-            const { data, error } = await supabase.functions.invoke('analyze-skin', {
-                body: { imageBase64: base64Image }
+            // Call Supabase Edge Function via fetch to ensure headers are sent correctly
+            const { data: { session } } = await supabase.auth.getSession();
+            const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://sdaozejlnkzrkidxjylf.supabase.co';
+            const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYW96ZWpsbmt6cmtpZHhqeWxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTgxNDcsImV4cCI6MjA4NTI3NDE0N30.vZlvNpIFz-7D6gJnqRtGUvtFZNzpc8zqHZFTyfT3MSU';
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/analyze-skin`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'apikey': supabaseAnonKey,
+                },
+                body: JSON.stringify({ imageBase64: base64Image })
             });
 
-            if (error) {
-                console.error('Edge Function Error:', error);
-                throw error;
-            }
+            const data = await response.json();
 
-            if (data?.error) {
-                throw new Error(data.error);
+            if (!response.ok) {
+                console.error('Edge Function Error:', data);
+                throw new Error(data.error || data.message || 'Analysis failed');
             }
 
             return data.data as GeminiAnalysisResponse;
@@ -50,20 +58,38 @@ export class AIService {
         console.log('💬 Sending secure message to AI (Edge Function)...');
 
         try {
-            const { data, error } = await supabase.functions.invoke('chat-assistant', {
-                body: { message }
+            const { data: { session } } = await supabase.auth.getSession();
+            const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://sdaozejlnkzrkidxjylf.supabase.co';
+            const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNkYW96ZWpsbmt6cmtpZHhqeWxmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2OTgxNDcsImV4cCI6MjA4NTI3NDE0N30.vZlvNpIFz-7D6gJnqRtGUvtFZNzpc8zqHZFTyfT3MSU';
+
+            const response = await fetch(`${supabaseUrl}/functions/v1/chat-assistant`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token}`,
+                    'apikey': supabaseAnonKey,
+                },
+                body: JSON.stringify({ message })
             });
 
-            if (error) throw error;
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error('Edge Function Error:', data);
+                throw new Error(data.error || data.message || 'Chat failed');
+            }
 
             if (data?.success) {
                 return data.response;
             }
 
             throw new Error('Invalid response from AI');
-
         } catch (error: any) {
-            console.error('❌ Cloud Chat Failed:', error.message);
+            console.error('❌ Cloud Chat Failed:', error.message || error);
+
+            // If the error message from Supabase contains actual details, log them
+            if (error.details) console.log('Error Details:', error.details);
+
             return this.getSimulatedChatResponse(message);
         }
     }

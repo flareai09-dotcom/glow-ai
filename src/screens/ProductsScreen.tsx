@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Image, StyleSheet, Linking, Alert } from 'react-native';
-import { ChevronLeft, Star, ShoppingCart, Filter, Heart, Plus, Trash2, X } from 'lucide-react-native';
+import { View, Text, ScrollView, TouchableOpacity, SafeAreaView, Image, StyleSheet, Linking, Alert, Platform, StatusBar, TextInput } from 'react-native';
+import { ChevronLeft, Star, ShoppingCart, Filter, Heart, Plus, Trash2, X, Search } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
 import { useProduct, Product } from '../context/ProductContext';
@@ -14,22 +14,34 @@ interface ProductRecommendationScreenProps {
 export function ProductRecommendationScreen({ navigation }: ProductRecommendationScreenProps) {
     const { products, deleteProduct, cart, addToCart } = useProduct();
     const { isAdmin } = useAuth();
-    const { isDark } = useTheme();
+    const { isDark, colors } = useTheme();
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [showFilters, setShowFilters] = useState(false);
     const [priceFilter, setPriceFilter] = useState<{ min: number; max: number } | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
 
     const filteredProducts = products.filter(p => {
         const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
         const matchesPrice = priceFilter ? (p.price >= priceFilter.min && p.price <= priceFilter.max) : true;
-        return matchesCategory && matchesPrice;
+        const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            p.brand.toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesPrice && matchesSearch;
     });
 
     const handleBuy = (link: string) => {
         if (link) {
-            Linking.openURL(link).catch(err => console.error("Couldn't load page", err));
+            // Enhanced Deep Linking: Try to force app if it's an amazon/flipkart link
+            let finalLink = link;
+            if (link.includes('amazon.in') && !link.includes('tag=')) {
+                finalLink = `${link}${link.includes('?') ? '&' : '?'}tag=glowai03-21`;
+            }
+
+            Linking.openURL(finalLink).catch(err => {
+                console.error("Couldn't load page", err);
+                Alert.alert("Link error", "Could not open the store link. Please check your internet connection.");
+            });
         } else {
             Alert.alert("Error", "No affiliate link found for this product.");
         }
@@ -58,23 +70,23 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
     };
 
     const themeStyles = {
-        container: { backgroundColor: isDark ? '#111827' : '#FAF7F5' },
-        text: { color: isDark ? '#F9FAFB' : '#1F2937' },
-        card: { backgroundColor: isDark ? '#1F2937' : 'white', borderColor: isDark ? '#374151' : '#F9FAFB' },
-        subText: { color: isDark ? '#9CA3AF' : '#9CA3AF' },
-        header: { backgroundColor: isDark ? '#111827' : 'white', borderBottomColor: isDark ? '#374151' : '#F3F4F6' },
-        tabActive: { backgroundColor: '#14B8A6' },
-        tabInactive: { backgroundColor: isDark ? '#1F2937' : 'white', borderColor: isDark ? '#374151' : '#F3F4F6' },
-        infoBanner: { backgroundColor: isDark ? 'rgba(20, 184, 166, 0.1)' : '#F0FDFA' }
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        card: { backgroundColor: colors.card, borderColor: colors.border },
+        subText: { color: colors.subText },
+        header: { backgroundColor: colors.background, borderBottomColor: colors.border },
+        tabActive: { backgroundColor: colors.primary },
+        tabInactive: { backgroundColor: colors.card, borderColor: colors.border },
+        infoBanner: { backgroundColor: `${colors.primary}1A` }
     };
 
     return (
         <View style={[styles.container, themeStyles.container]}>
-            <SafeAreaView style={styles.flex1}>
+            <SafeAreaView style={[styles.flex1, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
                 {/* Header */}
                 <View style={[styles.header, themeStyles.header]}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
-                        <ChevronLeft size={24} color={isDark ? "white" : "#374151"} />
+                        <ChevronLeft size={24} color={colors.text} />
                     </TouchableOpacity>
                     <Text style={[styles.headerTitle, themeStyles.text]}>Shop Routine</Text>
 
@@ -84,14 +96,16 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
                                 style={styles.addButton}
                                 onPress={() => navigation.navigate('AddProduct')}
                             >
-                                <Plus size={24} color="white" />
+                                <LinearGradient colors={[colors.primary, colors.secondary]} style={styles.addButtonGradient}>
+                                    <Plus size={24} color="white" />
+                                </LinearGradient>
                             </TouchableOpacity>
                         ) : (
                             <TouchableOpacity
                                 onPress={() => setShowFilters(!showFilters)}
                                 style={styles.filterButton}
                             >
-                                <Filter size={20} color={isDark ? "white" : "#374151"} />
+                                <Filter size={20} color={colors.text} />
                             </TouchableOpacity>
                         )}
 
@@ -99,7 +113,7 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
                             style={styles.cartButton}
                             onPress={() => navigation.navigate('Cart')}
                         >
-                            <ShoppingCart size={24} color={isDark ? "white" : "#374151"} />
+                            <ShoppingCart size={24} color={colors.text} />
                             {cart.length > 0 && (
                                 <View style={styles.cartBadge}>
                                     <Text style={styles.cartBadgeText}>{cart.length}</Text>
@@ -115,7 +129,7 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
                         <View style={styles.filtersHeader}>
                             <Text style={[styles.filtersTitle, themeStyles.text]}>Filter by Price</Text>
                             <TouchableOpacity onPress={() => setShowFilters(false)}>
-                                <X size={20} color={isDark ? "white" : "#374151"} />
+                                <X size={20} color={colors.text} />
                             </TouchableOpacity>
                         </View>
                         <View style={styles.priceOptions}>
@@ -123,31 +137,48 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
                                 onPress={() => setPriceFilter(null)}
                                 style={[styles.priceChip, !priceFilter && styles.priceChipActive]}
                             >
-                                <Text style={[styles.priceChipText, !priceFilter && { color: 'white' }]}>All</Text>
+                                <Text style={[styles.priceChipText, !priceFilter && { color: colors.background }]}>All</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setPriceFilter({ min: 0, max: 500 })}
-                                style={[styles.priceChip, priceFilter?.max === 500 && styles.priceChipActive]}
+                                style={[styles.priceChip, { borderColor: colors.border }, priceFilter?.max === 500 && [styles.priceChipActive, { backgroundColor: colors.primary, borderColor: colors.primary, shadowColor: colors.primary }]]}
                             >
-                                <Text style={[styles.priceChipText, priceFilter?.max === 500 && { color: 'white' }]}>Under ₹500</Text>
+                                <Text style={[styles.priceChipText, priceFilter?.max === 500 && { color: colors.background }]}>Under ₹500</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setPriceFilter({ min: 500, max: 1000 })}
-                                style={[styles.priceChip, priceFilter?.max === 1000 && styles.priceChipActive]}
+                                style={[styles.priceChip, { borderColor: colors.border }, priceFilter?.max === 1000 && [styles.priceChipActive, { backgroundColor: colors.primary, borderColor: colors.primary, shadowColor: colors.primary }]]}
                             >
-                                <Text style={[styles.priceChipText, priceFilter?.max === 1000 && { color: 'white' }]}>₹500 - ₹1000</Text>
+                                <Text style={[styles.priceChipText, priceFilter?.max === 1000 && { color: colors.background }]}>₹500 - ₹1000</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                                 onPress={() => setPriceFilter({ min: 1000, max: 5000 })}
-                                style={[styles.priceChip, priceFilter?.min === 1000 && styles.priceChipActive]}
+                                style={[styles.priceChip, { borderColor: colors.border }, priceFilter?.min === 1000 && [styles.priceChipActive, { backgroundColor: colors.primary, borderColor: colors.primary, shadowColor: colors.primary }]]}
                             >
-                                <Text style={[styles.priceChipText, priceFilter?.min === 1000 && { color: 'white' }]}>Above ₹1000</Text>
+                                <Text style={[styles.priceChipText, priceFilter?.min === 1000 && { color: colors.background }]}>Above ₹1000</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
                 )}
 
-                <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+                <ScrollView style={styles.scrollContainer} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+                    {/* Search Bar */}
+                    <View style={[styles.searchContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                        <Search size={20} color={colors.subText} />
+                        <TextInput
+                            style={[styles.searchInput, { color: colors.text }]}
+                            placeholder="Search products or brands..."
+                            placeholderTextColor={colors.subText}
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                        />
+                        {searchQuery.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchQuery('')}>
+                                <X size={20} color={colors.subText} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+
                     {/* Category tabs */}
                     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesRow}>
                         {categories.map((cat, i) => (
@@ -156,12 +187,13 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
                                 onPress={() => setSelectedCategory(cat)}
                                 style={[
                                     styles.categoryTab,
-                                    selectedCategory === cat ? styles.activeCategoryTab : themeStyles.tabInactive
+                                    selectedCategory === cat ? themeStyles.tabActive : themeStyles.tabInactive,
+                                    selectedCategory !== cat && { borderWidth: 1 }
                                 ]}
                             >
                                 <Text style={[
                                     styles.categoryText,
-                                    selectedCategory === cat ? styles.activeCategoryText : themeStyles.subText
+                                    selectedCategory === cat ? [styles.activeCategoryText, { color: colors.background }] : themeStyles.subText
                                 ]}>{cat}</Text>
                             </TouchableOpacity>
                         ))}
@@ -178,11 +210,20 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
                                 <Animatable.View
                                     animation="fadeInUp"
                                     delay={index * 100}
-                                    style={[styles.productCard, themeStyles.card]}
+                                    style={[styles.productCard, themeStyles.card, { shadowColor: colors.primary }]}
                                 >
                                     {/* Product image */}
                                     <View style={styles.imageContainer}>
-                                        <Image source={{ uri: product.image }} style={styles.productImage} />
+                                        <Image
+                                            source={{
+                                                uri: product.image && product.image.trim() !== '' ? product.image : 'https://images.unsplash.com/photo-1620917669809-1af0497965de?q=80&w=400',
+                                                headers: {
+                                                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                                                }
+                                            }}
+                                            style={styles.productImage}
+                                            resizeMode="contain"
+                                        />
                                     </View>
 
                                     {/* Product details */}
@@ -223,14 +264,14 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
                                                         addToCart(product);
                                                         Alert.alert("Added", "Added to cart!");
                                                     }}>
-                                                        <View style={styles.cartIconCircle}>
-                                                            <ShoppingCart size={16} color="#14B8A6" />
+                                                        <View style={[styles.cartIconCircle, { backgroundColor: `${colors.primary}1A`, borderColor: `${colors.primary}4D` }]}>
+                                                            <ShoppingCart size={16} color={colors.primary} />
                                                         </View>
                                                     </TouchableOpacity>
                                                     <TouchableOpacity onPress={() => handleBuy(product.affiliateLink)}>
                                                         <View style={styles.addButtonWrapper}>
                                                             <LinearGradient
-                                                                colors={['#14B8A6', '#10B981']}
+                                                                colors={[colors.primary, colors.secondary]}
                                                                 style={styles.buyButton}
                                                             >
                                                                 <Text style={styles.addButtonText}>Buy</Text>
@@ -257,7 +298,7 @@ export function ProductRecommendationScreen({ navigation }: ProductRecommendatio
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     flex1: {
         flex: 1,
@@ -314,7 +355,13 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#10B981',
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    addButtonGradient: {
+        width: '100%',
+        height: '100%',
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -352,14 +399,43 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 12,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#1E293B',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     priceChipActive: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
+        borderColor: '#00E5FF',
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.5,
+        shadowRadius: 8,
+        elevation: 4,
     },
     priceChipText: {
         fontSize: 12,
-        color: '#374151',
+        color: '#E2E8F0',
+    },
+    searchContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        borderRadius: 20,
+        marginBottom: 20,
+        borderWidth: 1,
+        gap: 12,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+        elevation: 3,
+    },
+    searchInput: {
+        flex: 1,
+        fontSize: 16,
+        fontWeight: '500',
+        padding: 0, // Remove default padding on Android
     },
     scrollContainer: {
         flex: 1,
@@ -379,14 +455,19 @@ const styles = StyleSheet.create({
         height: 38,
     },
     activeCategoryTab: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 0 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
     },
     categoryText: {
         fontWeight: 'bold',
         fontSize: 14,
     },
     activeCategoryText: {
-        color: 'white',
+        color: '#09090B',
     },
     productsGrid: {
         paddingBottom: 40,
@@ -397,14 +478,14 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     productCard: {
-        borderRadius: 24,
+        borderRadius: 16,
         padding: 16,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 1,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
         borderWidth: 1,
         flexDirection: 'row',
         gap: 16,
@@ -474,11 +555,11 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#F0FDFA',
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
         alignItems: 'center',
         justifyContent: 'center',
         borderWidth: 1,
-        borderColor: '#CCFBF1',
+        borderColor: 'rgba(0, 229, 255, 0.3)',
     },
     addButtonWrapper: {
         borderRadius: 12,
@@ -497,7 +578,9 @@ const styles = StyleSheet.create({
     },
     deleteButton: {
         padding: 8,
-        backgroundColor: '#FEF2F2',
+        backgroundColor: 'rgba(255, 0, 60, 0.1)',
         borderRadius: 8,
+        borderWidth: 1,
+        borderColor: 'rgba(255, 0, 60, 0.3)',
     },
 });

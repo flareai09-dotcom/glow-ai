@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
-import { View, StatusBar, Text } from 'react-native';
+import { View, StatusBar, Text, LogBox } from 'react-native';
+
+LogBox.ignoreLogs([
+  'setLayoutAnimationEnabledExperimental',
+  'SafeAreaView has been deprecated',
+]);
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SplashScreen } from './src/components/SplashScreen';

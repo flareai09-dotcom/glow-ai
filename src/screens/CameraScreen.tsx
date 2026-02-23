@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, SafeAreaView, Alert, Linking, StatusBar, Platform } from 'react-native';
 import { Camera, CameraView, useCameraPermissions } from 'expo-camera';
 import { Camera as CameraIcon, Upload, AlertCircle, ChevronLeft, Zap, ZapOff, RotateCcw } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -8,6 +8,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { profileService } from '../services/profile-service';
 import { scanService } from '../services/scan-service';
+import { useTheme } from '../context/ThemeContext';
 
 interface CameraScreenProps {
     navigation: any;
@@ -20,6 +21,18 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
     const [facing, setFacing] = useState<'front' | 'back'>('front');
     const [flash, setFlash] = useState<'on' | 'off'>('off');
     const [isCapturing, setIsCapturing] = useState(false);
+    const { colors } = useTheme();
+
+    const themeStyles = {
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        primary: { color: colors.primary },
+        buttonPrimary: { backgroundColor: colors.primary },
+        buttonText: { color: colors.background },
+        guide: { borderColor: `${colors.primary}80` },
+        capturingOuter: { borderColor: colors.primary },
+        capturingInner: { backgroundColor: colors.primary },
+    };
 
     useEffect(() => {
         if (permission && !permission.granted) {
@@ -39,7 +52,11 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
         if (!cameraRef) return;
         setIsCapturing(true);
         try {
-            const photo = await cameraRef.takePictureAsync();
+            const photo = await cameraRef.takePictureAsync({
+                quality: 1,
+                skipProcessing: false,
+                base64: false
+            });
             if (photo) {
                 if (!user?.id) return;
 
@@ -64,13 +81,6 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
                     navigation.navigate('Analysis', { imageUri: photo.uri });
                 } catch (e) {
                     console.error("Error checking limits", e);
-                    // Allow to proceed if check fails? Or block? Better block to be safe or allow?
-                    // Let's allow for now to avoid blocking on network error, or block? 
-                    // Safe default: allow but log error. Actually for paywall, maybe block. 
-                    // Let's just proceed to Analysis with image, let Analysis handle it? 
-                    // No, Analysis creates scan.
-                    // On network error let's just proceed, Analysis matches this logic? No Analysis doesn't check limit.
-                    // I'll proceed for now.
                     navigation.navigate('Analysis', { imageUri: photo.uri });
                 }
             }
@@ -119,23 +129,23 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
     };
 
     if (!permission) {
-        return <View style={styles.container} />; // Loading
+        return <View style={[styles.container, themeStyles.container]} />; // Loading
     }
 
     if (!permission.granted) {
         return (
-            <View style={[styles.container, styles.centerContent]}>
-                <Text style={styles.permissionText}>We need your permission to show the camera</Text>
-                <TouchableOpacity onPress={requestPermission} style={styles.permissionButton}>
-                    <Text style={styles.permissionButtonText}>Grant Permission</Text>
+            <View style={[styles.container, styles.centerContent, themeStyles.container]}>
+                <Text style={[styles.permissionText, themeStyles.text]}>We need your permission to show the camera</Text>
+                <TouchableOpacity onPress={requestPermission} style={[styles.permissionButton, themeStyles.buttonPrimary]}>
+                    <Text style={[styles.permissionButtonText, themeStyles.buttonText]}>Grant Permission</Text>
                 </TouchableOpacity>
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <SafeAreaView style={styles.safeArea}>
+        <View style={[styles.container, themeStyles.container]}>
+            <SafeAreaView style={[styles.safeArea, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
                 {/* Header */}
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
@@ -158,26 +168,28 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
                         <CameraView
                             style={styles.camera}
                             facing={facing}
-                            flash={flash}
+                            enableTorch={flash === 'on'}
+                            autofocus="on"
                             ref={ref => setCameraRef(ref)}
-                        >
+                        />
+                        <View style={StyleSheet.absoluteFillObject} pointerEvents="none">
                             <LinearGradient
                                 colors={['rgba(0,0,0,0.3)', 'transparent', 'rgba(0,0,0,0.3)']}
                                 style={styles.overlay}
                             >
                                 {/* Face Guide */}
                                 <View style={styles.guideContainer}>
-                                    <View style={styles.ovalGuide} />
+                                    <View style={[styles.ovalGuide, themeStyles.guide]} />
                                     <Text style={styles.guideText}>Align your face within the frame</Text>
                                 </View>
                             </LinearGradient>
-                        </CameraView>
+                        </View>
                     </View>
 
                     {/* Controls */}
                     <View style={styles.controlsContainer}>
                         <View style={styles.instructionsRow}>
-                            <AlertCircle size={16} color="#14B8A6" />
+                            <AlertCircle size={16} color={colors.primary} />
                             <Text style={styles.instructionText}>Ensure good lighting & remove glasses</Text>
                         </View>
 
@@ -186,9 +198,9 @@ export function CameraScreen({ navigation }: CameraScreenProps) {
                                 <Upload size={24} color="white" />
                             </TouchableOpacity>
 
-                            <TouchableOpacity onPress={handleCapture} style={styles.captureButtonOuter} disabled={isCapturing}>
+                            <TouchableOpacity onPress={handleCapture} style={[styles.captureButtonOuter, isCapturing && themeStyles.capturingOuter]} disabled={isCapturing}>
                                 <View style={styles.captureButtonInner}>
-                                    {isCapturing && <View style={styles.capturingIndicator} />}
+                                    {isCapturing && <View style={[styles.capturingIndicator, themeStyles.capturingInner]} />}
                                 </View>
                             </TouchableOpacity>
 
@@ -213,22 +225,22 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 24,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     permissionText: {
         fontSize: 16,
-        color: '#374151',
+        color: '#E2E8F0',
         marginBottom: 16,
         textAlign: 'center',
     },
     permissionButton: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
         paddingHorizontal: 24,
         paddingVertical: 12,
         borderRadius: 12,
     },
     permissionButtonText: {
-        color: 'white',
+        color: '#09090B',
         fontWeight: 'bold',
     },
     header: {
@@ -284,7 +296,7 @@ const styles = StyleSheet.create({
         height: 340,
         borderRadius: 125,
         borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.5)',
+        borderColor: 'rgba(0, 229, 255, 0.5)',
         borderStyle: 'dashed',
         marginBottom: 24,
     },
@@ -313,7 +325,7 @@ const styles = StyleSheet.create({
         marginBottom: 32,
     },
     instructionText: {
-        color: '#9CA3AF',
+        color: '#94A3B8',
         fontSize: 14,
     },
     buttonsRow: {
@@ -346,7 +358,7 @@ const styles = StyleSheet.create({
     },
     capturingIndicator: {
         flex: 1,
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
         borderRadius: 32,
         transform: [{ scale: 0.8 }],
     },

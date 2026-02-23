@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Share, ActivityIndicator, Alert, TextInput, Modal, KeyboardAvoidingView, Platform, SafeAreaView, StatusBar } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ChevronLeft, Share2, Wallet, Users, ArrowUpRight, Copy, Gift } from 'lucide-react-native';
 import * as Animatable from 'react-native-animatable';
 import { useAuth } from '../context/AuthContext';
 import { profileService } from '../services/profile-service';
 import { supabase } from '../lib/supabase';
+import { useTheme } from '../context/ThemeContext';
 
 export function ReferralScreen({ navigation }: any) {
     const { user } = useAuth();
@@ -17,6 +18,20 @@ export function ReferralScreen({ navigation }: any) {
     const [withdrawAmount, setWithdrawAmount] = useState('');
     const [upiId, setUpiId] = useState('');
     const [submitting, setSubmitting] = useState(false);
+    const { colors } = useTheme();
+
+    const themeStyles = {
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        subText: { color: colors.subText },
+        card: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary },
+        primaryText: { color: colors.primary },
+        iconBoxPrimary: { backgroundColor: `${colors.primary}1A` },
+        modalContent: { backgroundColor: colors.card, borderColor: `${colors.primary}80` },
+        input: { backgroundColor: colors.background, color: colors.text, borderColor: colors.border },
+        submitButton: { backgroundColor: colors.primary },
+        submitText: { color: colors.background },
+    };
 
     useEffect(() => {
         loadReferralData();
@@ -101,29 +116,27 @@ export function ReferralScreen({ navigation }: any) {
     // Render logic...
     if (loading) {
         return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#14B8A6" />
+            <View style={[styles.loadingContainer, themeStyles.container]}>
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     return (
-        <View style={styles.container}>
-            <LinearGradient colors={['#F0FDFA', '#fff']} style={styles.background} />
-
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ChevronLeft size={24} color="#1F2937" />
+                    <ChevronLeft size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Refer & Earn</Text>
+                <Text style={[styles.headerTitle, themeStyles.text]}>Refer & Earn</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Hero Card */}
-                <Animatable.View animation="fadeInDown" style={styles.heroCard}>
-                    <LinearGradient colors={['#14B8A6', '#0D9488']} style={styles.gradientCard}>
+                <Animatable.View animation="fadeInDown" style={[styles.heroCard, { shadowColor: colors.primary }]}>
+                    <LinearGradient colors={[colors.primary, colors.secondary]} style={styles.gradientCard}>
                         <View style={styles.balanceContainer}>
                             <Text style={styles.balanceLabel}>Wallet Balance</Text>
                             <Text style={styles.balanceValue}>₹{walletBalance.toFixed(2)}</Text>
@@ -132,48 +145,48 @@ export function ReferralScreen({ navigation }: any) {
                             style={styles.withdrawButton}
                             onPress={() => setIsWithdrawModalVisible(true)}
                         >
-                            <Text style={styles.withdrawText}>Withdraw</Text>
-                            <ArrowUpRight size={16} color="#0D9488" />
+                            <Text style={[styles.withdrawText, { color: colors.background }]}>Withdraw</Text>
+                            <ArrowUpRight size={16} color={colors.background} />
                         </TouchableOpacity>
                     </LinearGradient>
                 </Animatable.View>
 
                 {/* Main Action - Share Code */}
-                <Animatable.View animation="fadeInUp" delay={100} style={styles.shareSection}>
-                    <Text style={styles.sectionTitle}>Your Referral Code</Text>
-                    <View style={styles.codeContainer}>
-                        <Text style={styles.referralCode}>{referralCode}</Text>
+                <Animatable.View animation="fadeInUp" delay={100} style={[styles.shareSection, themeStyles.card]}>
+                    <Text style={[styles.sectionTitle, themeStyles.text]}>Your Referral Code</Text>
+                    <View style={[styles.codeContainer, { backgroundColor: colors.background, borderColor: colors.primary }]}>
+                        <Text style={[styles.referralCode, { color: colors.primary }]}>{referralCode}</Text>
                         <TouchableOpacity style={styles.copyButton} onPress={() => {
                             // Clipboard logic here (need expo-clipboard, omitted for brevity, fallback to Share)
                             handleShare();
                         }}>
-                            <Copy size={20} color="#14B8A6" />
+                            <Copy size={20} color={colors.primary} />
                         </TouchableOpacity>
                     </View>
-                    <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-                        <Share2 size={20} color="white" />
-                        <Text style={styles.shareText}>Share & Earn ₹20</Text>
+                    <TouchableOpacity style={[styles.shareButton, { backgroundColor: colors.primary }]} onPress={handleShare}>
+                        <Share2 size={20} color={colors.background} />
+                        <Text style={[styles.shareText, { color: colors.background }]}>Share & Earn ₹20</Text>
                     </TouchableOpacity>
-                    <Text style={styles.termsText}>
+                    <Text style={[styles.termsText, themeStyles.subText]}>
                         * Earn ₹20 real cash for every friend who upgrades to Premium.
                     </Text>
                 </Animatable.View>
 
                 {/* How it Works */}
-                <View style={styles.stepsSection}>
-                    <Text style={styles.sectionTitle}>How it Works</Text>
+                <View style={[styles.stepsSection, themeStyles.card, { shadowColor: 'transparent' }]}>
+                    <Text style={[styles.sectionTitle, themeStyles.text]}>How it Works</Text>
                     {[
                         { icon: Share2, title: 'Share Link', desc: 'Send your unique code to friends' },
                         { icon: Users, title: 'Friend Joins', desc: 'They sign up using your code' },
                         { icon: Gift, title: 'You Earn', desc: 'Get ₹20 when they buy Premium' },
                     ].map((step, i) => (
                         <View key={i} style={styles.stepRow}>
-                            <View style={styles.stepIconBox}>
-                                <step.icon size={20} color="#14B8A6" />
+                            <View style={[styles.stepIconBox, themeStyles.iconBoxPrimary]}>
+                                <step.icon size={20} color={colors.primary} />
                             </View>
                             <View style={styles.stepContent}>
-                                <Text style={styles.stepTitle}>{step.title}</Text>
-                                <Text style={styles.stepDesc}>{step.desc}</Text>
+                                <Text style={[styles.stepTitle, themeStyles.text]}>{step.title}</Text>
+                                <Text style={[styles.stepDesc, themeStyles.subText]}>{step.desc}</Text>
                             </View>
                         </View>
                     ))}
@@ -191,14 +204,14 @@ export function ReferralScreen({ navigation }: any) {
                     behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                     style={styles.modalOverlay}
                 >
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Withdraw Funds</Text>
-                        <Text style={styles.modalSubtitle}>Balance: ₹{walletBalance.toFixed(2)}</Text>
+                    <View style={[styles.modalContent, themeStyles.modalContent]}>
+                        <Text style={[styles.modalTitle, themeStyles.text]}>Withdraw Funds</Text>
+                        <Text style={[styles.modalSubtitle, themeStyles.subText]}>Balance: ₹{walletBalance.toFixed(2)}</Text>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Amount (Min ₹50)</Text>
+                            <Text style={[styles.label, themeStyles.text]}>Amount (Min ₹50)</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, themeStyles.input]}
                                 placeholder="Enter amount"
                                 value={withdrawAmount}
                                 onChangeText={setWithdrawAmount}
@@ -207,9 +220,9 @@ export function ReferralScreen({ navigation }: any) {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>UPI ID</Text>
+                            <Text style={[styles.label, themeStyles.text]}>UPI ID</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.input, themeStyles.input]}
                                 placeholder="e.g. user@okhdfcbank"
                                 value={upiId}
                                 onChangeText={setUpiId}
@@ -219,70 +232,70 @@ export function ReferralScreen({ navigation }: any) {
 
                         <View style={styles.modalActions}>
                             <TouchableOpacity
-                                style={[styles.modalButton, styles.cancelButton]}
+                                style={[styles.modalButton, styles.cancelButton, { backgroundColor: colors.border }]}
                                 onPress={() => setIsWithdrawModalVisible(false)}
                             >
-                                <Text style={styles.cancelText}>Cancel</Text>
+                                <Text style={[styles.cancelText, themeStyles.text]}>Cancel</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
-                                style={[styles.modalButton, styles.submitButton]}
+                                style={[styles.modalButton, themeStyles.submitButton]}
                                 onPress={handleWithdraw}
                                 disabled={submitting}
                             >
                                 {submitting ? (
-                                    <ActivityIndicator size="small" color="white" />
+                                    <ActivityIndicator size="small" color={colors.background} />
                                 ) : (
-                                    <Text style={styles.submitText}>Submit Request</Text>
+                                    <Text style={[styles.submitText, themeStyles.submitText]}>Submit Request</Text>
                                 )}
                             </TouchableOpacity>
                         </View>
                     </View>
                 </KeyboardAvoidingView>
             </Modal>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: { flex: 1 },
-    background: { position: 'absolute', width: '100%', height: '100%' },
+    background: { display: 'none' }, // Replaced by container backgroundColor
     loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 16, marginTop: 40 },
-    backButton: { padding: 8, backgroundColor: 'white', borderRadius: 12, elevation: 2 },
-    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#1F2937' },
+    header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 24, paddingVertical: 16 },
+    backButton: { padding: 8, backgroundColor: 'rgba(255, 255, 255, 0.1)', borderRadius: 12, elevation: 0 },
+    headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#E2E8F0' },
     scrollContent: { padding: 24 },
     heroCard: { marginBottom: 32, borderRadius: 24, overflow: 'hidden', elevation: 8 },
     gradientCard: { padding: 24, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
     balanceContainer: {},
     balanceLabel: { color: 'rgba(255,255,255,0.8)', fontSize: 14, marginBottom: 4 },
     balanceValue: { color: 'white', fontSize: 32, fontWeight: 'bold' },
-    withdrawButton: { backgroundColor: 'white', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, gap: 8 },
-    withdrawText: { color: '#0D9488', fontWeight: 'bold', fontSize: 14 },
-    shareSection: { backgroundColor: 'white', borderRadius: 24, padding: 24, marginBottom: 24, elevation: 2 },
-    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#1F2937', marginBottom: 16 },
-    codeContainer: { flexDirection: 'row', backgroundColor: '#F3F4F6', borderRadius: 16, padding: 16, alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#D1D5DB' },
-    referralCode: { fontSize: 24, fontWeight: 'bold', color: '#1F2937', letterSpacing: 2 },
+    withdrawButton: { backgroundColor: 'rgba(0, 0, 0, 0.5)', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, gap: 8 },
+    withdrawText: { color: '#00E5FF', fontWeight: 'bold', fontSize: 14 },
+    shareSection: { backgroundColor: '#12121A', borderRadius: 24, padding: 24, marginBottom: 24, elevation: 5, shadowColor: '#00E5FF', borderWidth: 1, borderColor: 'rgba(0, 229, 255, 0.2)' },
+    sectionTitle: { fontSize: 18, fontWeight: 'bold', color: '#E2E8F0', marginBottom: 16 },
+    codeContainer: { flexDirection: 'row', backgroundColor: '#09090B', borderRadius: 16, padding: 16, alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, borderStyle: 'dashed', borderWidth: 1, borderColor: '#00E5FF' },
+    referralCode: { fontSize: 24, fontWeight: 'bold', color: '#00E5FF', letterSpacing: 2 },
     copyButton: { padding: 8 },
-    shareButton: { backgroundColor: '#14B8A6', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, gap: 8, marginBottom: 12 },
-    shareText: { color: 'white', fontWeight: 'bold', fontSize: 16 },
-    termsText: { color: '#6B7280', fontSize: 12, textAlign: 'center' },
-    stepsSection: { backgroundColor: 'white', borderRadius: 24, padding: 24 },
+    shareButton: { backgroundColor: '#00E5FF', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', padding: 16, borderRadius: 16, gap: 8, marginBottom: 12 },
+    shareText: { color: '#09090B', fontWeight: 'bold', fontSize: 16 },
+    termsText: { color: '#94A3B8', fontSize: 12, textAlign: 'center' },
+    stepsSection: { backgroundColor: '#12121A', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(0, 229, 255, 0.2)' },
     stepRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20, gap: 16 },
-    stepIconBox: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F0FDFA', justifyContent: 'center', alignItems: 'center' },
+    stepIconBox: { width: 48, height: 48, borderRadius: 24, backgroundColor: 'rgba(0, 229, 255, 0.1)', justifyContent: 'center', alignItems: 'center' },
     stepContent: { flex: 1 },
-    stepTitle: { fontSize: 16, fontWeight: 'bold', color: '#1F2937' },
-    stepDesc: { fontSize: 14, color: '#6B7280' },
+    stepTitle: { fontSize: 16, fontWeight: 'bold', color: '#E2E8F0' },
+    stepDesc: { fontSize: 14, color: '#94A3B8' },
     modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 24 },
-    modalContent: { backgroundColor: 'white', borderRadius: 24, padding: 24 },
-    modalTitle: { fontSize: 24, fontWeight: 'bold', color: '#1F2937', marginBottom: 8 },
-    modalSubtitle: { fontSize: 16, color: '#6B7280', marginBottom: 24 },
+    modalContent: { backgroundColor: '#12121A', borderRadius: 24, padding: 24, borderWidth: 1, borderColor: 'rgba(0, 229, 255, 0.5)' },
+    modalTitle: { fontSize: 24, fontWeight: 'bold', color: '#E2E8F0', marginBottom: 8 },
+    modalSubtitle: { fontSize: 16, color: '#94A3B8', marginBottom: 24 },
     inputGroup: { marginBottom: 16 },
-    label: { fontSize: 14, fontWeight: 'bold', color: '#374151', marginBottom: 8 },
-    input: { backgroundColor: '#F9FAFB', borderRadius: 12, padding: 16, fontSize: 16, color: '#1F2937', borderWidth: 1, borderColor: '#E5E7EB' },
+    label: { fontSize: 14, fontWeight: 'bold', color: '#E2E8F0', marginBottom: 8 },
+    input: { backgroundColor: '#09090B', borderRadius: 12, padding: 16, fontSize: 16, color: '#E2E8F0', borderWidth: 1, borderColor: 'rgba(0, 229, 255, 0.2)' },
     modalActions: { flexDirection: 'row', gap: 12, marginTop: 8 },
     modalButton: { flex: 1, padding: 16, borderRadius: 16, alignItems: 'center' },
-    cancelButton: { backgroundColor: '#F3F4F6' },
-    submitButton: { backgroundColor: '#14B8A6' },
-    cancelText: { color: '#374151', fontWeight: 'bold' },
-    submitText: { color: 'white', fontWeight: 'bold' },
+    cancelButton: { backgroundColor: '#1F2937' },
+    submitButton: { backgroundColor: '#00E5FF' },
+    cancelText: { color: '#E2E8F0', fontWeight: 'bold' },
+    submitText: { color: '#09090B', fontWeight: 'bold' },
 });

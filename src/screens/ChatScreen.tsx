@@ -10,6 +10,7 @@ import {
     ActivityIndicator,
     StyleSheet,
     SafeAreaView,
+    StatusBar,
 } from 'react-native';
 import { Send, Trash2, ArrowLeft, Sparkles } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -25,7 +26,7 @@ interface ChatScreenProps {
 
 export function ChatScreen({ navigation }: ChatScreenProps) {
     const { user } = useAuth();
-    const { isDark } = useTheme();
+    const { colors, isDark } = useTheme();
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputText, setInputText] = useState('');
     const [loading, setLoading] = useState(false);
@@ -33,10 +34,16 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
     const flatListRef = useRef<FlatList>(null);
 
     const themeStyles = {
-        container: { backgroundColor: isDark ? '#111827' : '#FAF7F5' },
-        text: { color: isDark ? '#F9FAFB' : '#1F2937' },
-        card: { backgroundColor: isDark ? '#1F2937' : 'white' },
-        subText: { color: isDark ? '#9CA3AF' : '#6B7280' },
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        card: { backgroundColor: colors.card, borderColor: colors.border },
+        subText: { color: colors.subText },
+        primaryText: { color: colors.primary },
+        iconBoxPrimary: { backgroundColor: `${colors.primary}1A`, borderColor: `${colors.primary}4D` },
+        inputContainer: { borderTopColor: colors.border, backgroundColor: colors.card },
+        aiAvatar: { backgroundColor: colors.card, borderColor: colors.primary },
+        aiBubble: { backgroundColor: `${colors.primary}0D`, borderColor: `${colors.primary}4D` },
+        userBubble: { backgroundColor: `${colors.secondary}4D`, borderColor: colors.secondary },
     };
 
     useEffect(() => {
@@ -140,17 +147,17 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
                 ]}
             >
                 {!isUser && (
-                    <View style={styles.aiAvatar}>
-                        <Sparkles size={16} color="#14B8A6" />
+                    <View style={[styles.aiAvatar, themeStyles.aiAvatar]}>
+                        <Sparkles size={16} color={colors.primary} />
                     </View>
                 )}
                 <View
                     style={[
                         styles.messageBubble,
-                        isUser ? styles.userBubble : styles.aiBubble,
+                        isUser ? [styles.userBubble, themeStyles.userBubble] : [styles.aiBubble, themeStyles.aiBubble],
                     ]}
                 >
-                    <Text style={[styles.messageText, isUser ? styles.userText : styles.aiText]}>
+                    <Text style={[styles.messageText, themeStyles.text]}>
                         {item.message}
                     </Text>
                 </View>
@@ -161,7 +168,7 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
     const renderEmptyState = () => (
         <View style={styles.emptyState}>
             <Animatable.View animation="pulse" iterationCount="infinite" duration={2000}>
-                <Sparkles size={48} color="#14B8A6" />
+                <Sparkles size={48} color={colors.primary} />
             </Animatable.View>
             <Text style={[styles.emptyTitle, themeStyles.text]}>Hi! I'm Glowy 👋</Text>
             <Text style={[styles.emptySubtitle, themeStyles.subText]}>
@@ -169,37 +176,37 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
             </Text>
             <View style={styles.suggestionsContainer}>
                 <TouchableOpacity
-                    style={styles.suggestionChip}
+                    style={[styles.suggestionChip, themeStyles.iconBoxPrimary]}
                     onPress={() => setInputText('What skincare routine should I follow?')}
                 >
-                    <Text style={styles.suggestionText}>Skincare routine tips</Text>
+                    <Text style={[styles.suggestionText, { color: colors.primary }]}>Skincare routine tips</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={styles.suggestionChip}
+                    style={[styles.suggestionChip, themeStyles.iconBoxPrimary]}
                     onPress={() => setInputText('How to treat acne?')}
                 >
-                    <Text style={styles.suggestionText}>Acne treatment</Text>
+                    <Text style={[styles.suggestionText, { color: colors.primary }]}>Acne treatment</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                    style={styles.suggestionChip}
+                    style={[styles.suggestionChip, themeStyles.iconBoxPrimary]}
                     onPress={() => setInputText('Best ingredients for dark spots?')}
                 >
-                    <Text style={styles.suggestionText}>Dark spots</Text>
+                    <Text style={[styles.suggestionText, { color: colors.primary }]}>Dark spots</Text>
                 </TouchableOpacity>
             </View>
         </View>
     );
 
     return (
-        <SafeAreaView style={[styles.container, themeStyles.container]}>
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
             {/* Header */}
             <View style={[styles.header, themeStyles.card]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft size={24} color={isDark ? '#F9FAFB' : '#1F2937'} />
+                    <ArrowLeft size={24} color={colors.text} />
                 </TouchableOpacity>
                 <View style={styles.headerCenter}>
-                    <View style={styles.headerIcon}>
-                        <Sparkles size={20} color="#14B8A6" />
+                    <View style={[styles.headerIcon, themeStyles.card, { borderColor: colors.primary }]}>
+                        <Sparkles size={20} color={colors.primary} />
                     </View>
                     <View>
                         <Text style={[styles.headerTitle, themeStyles.text]}>Glowy AI</Text>
@@ -207,7 +214,7 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
                     </View>
                 </View>
                 <TouchableOpacity onPress={clearChat} style={styles.clearButton}>
-                    <Trash2 size={20} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                    <Trash2 size={20} color={colors.subText} />
                 </TouchableOpacity>
             </View>
 
@@ -219,7 +226,7 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
             >
                 {loadingHistory ? (
                     <View style={styles.loadingContainer}>
-                        <ActivityIndicator size="large" color="#14B8A6" />
+                        <ActivityIndicator size="large" color={colors.primary} />
                     </View>
                 ) : (
                     <FlatList
@@ -234,11 +241,11 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
                 )}
 
                 {/* Input */}
-                <View style={[styles.inputContainer, themeStyles.card]}>
+                <View style={[styles.inputContainer, themeStyles.inputContainer]}>
                     <TextInput
                         style={[styles.input, themeStyles.text]}
                         placeholder="Ask me anything about skincare..."
-                        placeholderTextColor={isDark ? '#9CA3AF' : '#6B7280'}
+                        placeholderTextColor={colors.subText}
                         value={inputText}
                         onChangeText={setInputText}
                         multiline
@@ -253,15 +260,15 @@ export function ChatScreen({ navigation }: ChatScreenProps) {
                         <LinearGradient
                             colors={
                                 !inputText.trim() || loading
-                                    ? ['#9CA3AF', '#9CA3AF']
-                                    : ['#14B8A6', '#10B981']
+                                    ? [colors.border, colors.border]
+                                    : [colors.primary, colors.secondary]
                             }
                             style={styles.sendGradient}
                         >
                             {loading ? (
-                                <ActivityIndicator size="small" color="white" />
+                                <ActivityIndicator size="small" color={colors.background} />
                             ) : (
-                                <Send size={20} color="white" />
+                                <Send size={20} color={colors.background} />
                             )}
                         </LinearGradient>
                     </TouchableOpacity>
@@ -285,7 +292,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderBottomWidth: 1,
-        borderBottomColor: '#E5E7EB',
+        borderBottomColor: 'rgba(0, 229, 255, 0.2)',
     },
     backButton: {
         padding: 8,
@@ -300,10 +307,12 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: '#D1FAE5',
+        backgroundColor: '#12121A',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
+        borderWidth: 1,
+        borderColor: '#00E5FF',
     },
     headerTitle: {
         fontSize: 18,
@@ -339,32 +348,38 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: '#D1FAE5',
+        backgroundColor: '#12121A',
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 8,
+        borderWidth: 1,
+        borderColor: '#00E5FF',
     },
     messageBubble: {
         padding: 12,
         borderRadius: 16,
     },
     userBubble: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: 'rgba(0, 123, 255, 0.3)',
         borderBottomRightRadius: 4,
+        borderWidth: 1,
+        borderColor: '#007BFF',
     },
     aiBubble: {
-        backgroundColor: '#F3F4F6',
+        backgroundColor: 'rgba(0, 229, 255, 0.05)',
         borderBottomLeftRadius: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.3)',
     },
     messageText: {
         fontSize: 15,
         lineHeight: 22,
     },
     userText: {
-        color: 'white',
+        color: '#E2E8F0',
     },
     aiText: {
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     emptyState: {
         flex: 1,
@@ -388,14 +403,16 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     suggestionChip: {
-        backgroundColor: '#D1FAE5',
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderRadius: 12,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.3)',
     },
     suggestionText: {
-        color: '#14B8A6',
+        color: '#00E5FF',
         fontSize: 14,
         fontWeight: '600',
     },
@@ -405,7 +422,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 12,
         borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
+        borderTopColor: 'rgba(0, 229, 255, 0.2)',
     },
     input: {
         flex: 1,

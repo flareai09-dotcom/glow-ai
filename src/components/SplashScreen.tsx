@@ -18,7 +18,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
 
     return (
         <LinearGradient
-            colors={['#FAF7F5', '#F5D5CB', '#D1E3D1']}
+            colors={['#09090B', '#12121A', '#0F0C29']}
             style={styles.container}
         >
             {/* Decorative circles */}
@@ -51,7 +51,7 @@ export function SplashScreen({ onComplete }: SplashScreenProps) {
                 style={styles.logoContainer}
             >
                 <View style={styles.logoBox}>
-                    <Sparkles size={40} color="white" strokeWidth={2} />
+                    <Sparkles size={40} color="#00E5FF" strokeWidth={2} />
                 </View>
 
                 <Text style={styles.appName}>GlowAI</Text>
@@ -101,14 +101,14 @@ const styles = StyleSheet.create({
         right: 40,
         width: 128,
         height: 128,
-        backgroundColor: 'rgba(255, 255, 255, 0.3)',
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
     },
     decorCircle2: {
         bottom: 128,
         left: 32,
         width: 160,
         height: 160,
-        backgroundColor: 'rgba(20, 184, 166, 0.2)',
+        backgroundColor: 'rgba(255, 0, 60, 0.1)',
     },
     logoContainer: {
         alignItems: 'center',
@@ -117,25 +117,27 @@ const styles = StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 24,
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#12121A',
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: 24,
-        shadowColor: '#000',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 5,
+        shadowRadius: 10,
+        elevation: 10,
+        borderWidth: 1,
+        borderColor: '#00E5FF',
     },
     appName: {
         fontSize: 36,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
         marginBottom: 8,
     },
     tagline: {
         fontSize: 14,
-        color: '#6B7280',
+        color: '#94A3B8',
         textAlign: 'center',
         maxWidth: 300,
     },
@@ -151,6 +153,6 @@ const styles = StyleSheet.create({
         width: 8,
         height: 8,
         borderRadius: 4,
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
     },
 });

@@ -86,7 +86,7 @@ export const ProductProvider: React.FC<{ children: React.ReactNode }> = ({ child
                     reviews: p.reviews || 0,
                     category: p.category,
                     benefits: p.benefits || [],
-                    image: p.image || 'https://images.unsplash.com/photo-1620917669809-1af0497965de?q=80&w=200',
+                    image: p.image && p.image.trim() !== '' ? p.image : null,
                     affiliateLink: p.affiliate_link || '',
                     description: p.description || ''
                 }));

@@ -15,8 +15,9 @@ export interface Scan {
     thumbnail_url?: string;
     skin_score: number; // 0-100
     issues: SkinIssue[];
-    remedies?: string[]; // New field
-    recommendations?: string[]; // New field for products
+    remedies?: string[];
+    routine_suggestions?: string[]; // New
+    product_ingredients?: string[]; // New
     analysis_summary?: string;
     created_at: string;
 }
@@ -28,6 +29,8 @@ export interface ScanCreateInput {
     skin_score: number;
     issues: SkinIssue[];
     remedies?: string[];
+    routine_suggestions?: string[];
+    product_ingredients?: string[];
     analysis_summary?: string;
 }
 

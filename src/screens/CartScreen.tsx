@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, SafeAreaView, Image, Alert, StatusBar, Platform } from 'react-native';
 import { ChevronLeft, Trash2, ShoppingBag } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useProduct, Product } from '../context/ProductContext';
@@ -7,7 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 
 export function CartScreen({ navigation }: { navigation: any }) {
     const { cart, removeFromCart, clearCart } = useProduct();
-    const { isDark } = useTheme();
+    const { colors, isDark } = useTheme();
 
     const subtotal = cart.reduce((sum, item) => sum + item.price, 0);
     const tax = subtotal * 0.18; // 18% GST example
@@ -29,34 +29,42 @@ export function CartScreen({ navigation }: { navigation: any }) {
     };
 
     const themeStyles = {
-        container: { backgroundColor: isDark ? '#111827' : '#FAF7F5' },
-        text: { color: isDark ? '#F9FAFB' : '#1F2937' },
-        card: { backgroundColor: isDark ? '#1F2937' : 'white' },
-        subText: { color: isDark ? '#9CA3AF' : '#6B7280' },
-        divider: { backgroundColor: isDark ? '#374151' : '#E5E7EB' },
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        card: {
+            backgroundColor: colors.card,
+            borderWidth: 1,
+            borderColor: colors.border,
+            shadowColor: colors.primary
+        },
+        subText: { color: colors.subText },
+        divider: { backgroundColor: colors.border },
+        primaryText: { color: colors.primary },
+        checkoutText: { color: colors.background },
+        emptyIconBg: { backgroundColor: colors.card, borderColor: colors.border },
     };
 
     return (
-        <SafeAreaView style={[styles.container, themeStyles.container]}>
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ChevronLeft size={24} color={isDark ? "white" : "#1F2937"} />
+                    <ChevronLeft size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, themeStyles.text]}>My Cart</Text>
                 <TouchableOpacity onPress={clearCart}>
-                    <Text style={styles.clearText}>Clear</Text>
+                    <Text style={[styles.clearText, { color: colors.error }]}>Clear</Text>
                 </TouchableOpacity>
             </View>
 
             {cart.length === 0 ? (
-                <View style={styles.emptyContainer}>
-                    <View style={styles.emptyIconBg}>
-                        <ShoppingBag size={48} color="#9CA3AF" />
+                <View style={[styles.emptyContainer, themeStyles.container]}>
+                    <View style={[styles.emptyIconBg, themeStyles.emptyIconBg]}>
+                        <ShoppingBag size={48} color={colors.primary} />
                     </View>
                     <Text style={[styles.emptyTitle, themeStyles.text]}>Your Bag is Empty</Text>
-                    <Text style={styles.emptySubtitle}>Looks like you haven't added any skincare goodies yet.</Text>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.shopNowButton}>
-                        <Text style={styles.shopNowText}>Shop Now</Text>
+                    <Text style={[styles.emptySubtitle, themeStyles.subText]}>Looks like you haven't added any skincare goodies yet.</Text>
+                    <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.shopNowButton, { backgroundColor: colors.card, borderColor: colors.primary }]}>
+                        <Text style={[styles.shopNowText, { color: colors.primary }]}>Shop Now</Text>
                     </TouchableOpacity>
                 </View>
             ) : (
@@ -68,10 +76,10 @@ export function CartScreen({ navigation }: { navigation: any }) {
                                 <View style={styles.itemInfo}>
                                     <Text style={[styles.itemBrand, themeStyles.subText]}>{item.brand}</Text>
                                     <Text style={[styles.itemName, themeStyles.text]}>{item.name}</Text>
-                                    <Text style={styles.itemPrice}>₹{item.price}</Text>
+                                    <Text style={[styles.itemPrice, { color: colors.primary }]}>₹{item.price}</Text>
                                 </View>
                                 <TouchableOpacity onPress={() => removeFromCart(item.id)} style={styles.deleteButton}>
-                                    <Trash2 size={18} color="#EF4444" />
+                                    <Trash2 size={18} color={colors.error} />
                                 </TouchableOpacity>
                             </View>
                         ))}
@@ -89,15 +97,15 @@ export function CartScreen({ navigation }: { navigation: any }) {
                         <View style={[styles.divider, themeStyles.divider]} />
                         <View style={styles.summaryRow}>
                             <Text style={[styles.totalLabel, themeStyles.text]}>Total</Text>
-                            <Text style={styles.totalValue}>₹{total.toFixed(0)}</Text>
+                            <Text style={[styles.totalValue, { color: colors.primary }]}>₹{total.toFixed(0)}</Text>
                         </View>
 
                         <TouchableOpacity onPress={handleCheckout} style={styles.checkoutButtonWrapper}>
                             <LinearGradient
-                                colors={['#14B8A6', '#10B981']}
+                                colors={[colors.primary, colors.secondary]}
                                 style={styles.checkoutButton}
                             >
-                                <Text style={styles.checkoutText}>Checkout</Text>
+                                <Text style={[styles.checkoutText, themeStyles.checkoutText]}>Checkout</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
@@ -126,7 +134,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     clearText: {
-        color: '#EF4444',
+        color: '#FF003C',
         fontWeight: '600',
     },
     emptyContainer: {
@@ -139,10 +147,12 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#12121A',
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 24,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     emptyTitle: {
         fontSize: 24,
@@ -151,18 +161,20 @@ const styles = StyleSheet.create({
     },
     emptySubtitle: {
         fontSize: 16,
-        color: '#9CA3AF',
+        color: '#94A3B8',
         textAlign: 'center',
         marginBottom: 32,
     },
     shopNowButton: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#12121A',
         paddingHorizontal: 32,
         paddingVertical: 16,
         borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#00E5FF',
     },
     shopNowText: {
-        color: 'white',
+        color: '#00E5FF',
         fontWeight: 'bold',
         fontSize: 16,
     },
@@ -176,17 +188,17 @@ const styles = StyleSheet.create({
         padding: 12,
         borderRadius: 16,
         marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 1,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
     },
     itemImage: {
         width: 80,
         height: 80,
         borderRadius: 12,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: '#09090B',
     },
     itemInfo: {
         flex: 1,
@@ -204,7 +216,7 @@ const styles = StyleSheet.create({
     itemPrice: {
         fontSize: 16,
         fontWeight: 'bold',
-        color: '#14B8A6',
+        color: '#00E5FF',
     },
     deleteButton: {
         padding: 8,
@@ -218,10 +230,10 @@ const styles = StyleSheet.create({
         paddingBottom: 34,
         borderTopLeftRadius: 32,
         borderTopRightRadius: 32,
-        shadowColor: '#000',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
+        shadowOpacity: 0.15,
+        shadowRadius: 16,
         elevation: 20,
     },
     summaryRow: {
@@ -243,7 +255,7 @@ const styles = StyleSheet.create({
     totalValue: {
         fontSize: 24,
         fontWeight: 'bold',
-        color: '#14B8A6',
+        color: '#00E5FF',
     },
     checkoutButtonWrapper: {
         marginTop: 24,
@@ -255,7 +267,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     checkoutText: {
-        color: 'white',
+        color: '#09090B',
         fontSize: 18,
         fontWeight: 'bold',
     },

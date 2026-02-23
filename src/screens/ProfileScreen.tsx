@@ -16,7 +16,7 @@ import {
 } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Animatable from 'react-native-animatable';
-import { useTheme } from '../context/ThemeContext';
+import { useTheme, ThemeType } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { profileService, UserProfile } from '../services/profile-service';
 
@@ -25,7 +25,7 @@ interface ProfileScreenProps {
 }
 
 export function ProfileScreen({ navigation }: ProfileScreenProps) {
-    const { isDark, toggleTheme } = useTheme();
+    const { theme, setTheme, colors, isDark } = useTheme();
     const { user, signOut } = useAuth();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -77,23 +77,33 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
         }
     };
 
+    const handleThemeChange = () => {
+        if (theme === 'light') {
+            setTheme('dark');
+        } else if (theme === 'dark') {
+            setTheme('genz');
+        } else {
+            setTheme('light');
+        }
+    };
+
     // Dynamic styles based on theme
     const themeStyles = {
         container: {
-            backgroundColor: isDark ? '#111827' : '#FAF7F5',
+            backgroundColor: colors.background,
         },
         text: {
-            color: isDark ? '#F9FAFB' : '#1F2937',
+            color: colors.text,
         },
         subText: {
-            color: isDark ? '#9CA3AF' : '#9CA3AF',
+            color: colors.subText,
         },
         card: {
-            backgroundColor: isDark ? '#1F2937' : 'white',
-            borderColor: isDark ? '#374151' : '#F9FAFB',
+            backgroundColor: colors.card,
+            borderColor: colors.border,
         },
         itemBorder: {
-            borderBottomColor: isDark ? '#374151' : '#F3F4F6',
+            borderBottomColor: colors.border,
         }
     };
 
@@ -162,11 +172,9 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                 },
                 {
                     icon: Moon,
-                    label: 'Dark Mode',
-                    value: isDark ? 'On' : 'Off',
-                    type: 'switch',
-                    switchValue: isDark,
-                    onToggle: toggleTheme
+                    label: 'Theme',
+                    value: theme === 'genz' ? 'GenZ' : (theme === 'dark' ? 'Dark' : 'Light'),
+                    onPress: handleThemeChange
                 },
             ],
         },
@@ -192,17 +200,17 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
     if (loading) {
         return (
             <View style={[styles.container, themeStyles.container, { justifyContent: 'center', alignItems: 'center' }]}>
-                <ActivityIndicator size="large" color="#14B8A6" />
+                <ActivityIndicator size="large" color={colors.primary} />
             </View>
         );
     }
 
     return (
         <View style={[styles.container, themeStyles.container]}>
-            <ScrollView style={styles.flex1} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.flex1} contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <LinearGradient
-                    colors={isDark ? ['#0F766E', '#0D9488'] : ['#14B8A6', '#10B981']}
+                    colors={['#0F0C29', '#302B63']}
                     style={styles.header}
                 >
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -260,8 +268,8 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                                         onPress={item.type === 'switch' ? item.onToggle : item.onPress}
                                         disabled={item.type === 'switch' && false} // TouchableOpacity handles the tap for the row
                                     >
-                                        <View style={styles.itemIconBox}>
-                                            <item.icon size={20} color="#14B8A6" />
+                                        <View style={[styles.itemIconBox, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                                            <item.icon size={20} color={colors.primary} />
                                         </View>
 
                                         <View style={styles.flex1}>
@@ -273,7 +281,7 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
 
                                         {item.badge ? (
                                             <LinearGradient
-                                                colors={['#14B8A6', '#10B981']}
+                                                colors={['#FF003C', '#FF007F']}
                                                 style={styles.premiumBadge}
                                             >
                                                 <Text style={styles.premiumBadgeText}>PREMIUM</Text>
@@ -284,11 +292,11 @@ export function ProfileScreen({ navigation }: ProfileScreenProps) {
                                             <Switch
                                                 value={item.switchValue}
                                                 onValueChange={item.onToggle}
-                                                trackColor={{ false: "#E5E7EB", true: "#14B8A6" }}
-                                                thumbColor={item.switchValue ? "white" : "#F3F4F6"}
+                                                trackColor={{ false: "#1E293B", true: "#00E5FF" }}
+                                                thumbColor={item.switchValue ? "white" : "#94A3B8"}
                                             />
                                         ) : (
-                                            <ChevronRight size={18} color="#D1D5DB" />
+                                            <ChevronRight size={18} color="#475569" />
                                         )}
                                     </TouchableOpacity>
                                 ))}
@@ -318,8 +326,10 @@ const styles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingTop: 48,
         paddingBottom: 48,
-        borderBottomLeftRadius: 40,
-        borderBottomRightRadius: 40,
+        borderBottomLeftRadius: 32,
+        borderBottomRightRadius: 32,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 229, 255, 0.3)',
     },
     backButton: {
         marginBottom: 24,
@@ -394,12 +404,12 @@ const styles = StyleSheet.create({
         marginLeft: 8,
     },
     itemsCard: {
-        borderRadius: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
+        borderRadius: 16,
+        shadowColor: 'transparent',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
         borderWidth: 1,
         overflow: 'hidden',
     },
@@ -416,9 +426,9 @@ const styles = StyleSheet.create({
         width: 40,
         height: 40,
         borderRadius: 12,
-        backgroundColor: '#F0FDFA',
         alignItems: 'center',
         justifyContent: 'center',
+        borderWidth: 1,
     },
     itemLabel: {
         fontWeight: 'bold',
@@ -426,7 +436,7 @@ const styles = StyleSheet.create({
     },
     itemValue: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: '#94A3B8',
         marginTop: 2,
     },
     premiumBadge: {
@@ -441,7 +451,7 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     logoutButton: {
-        backgroundColor: '#FEF2F2',
+        backgroundColor: 'rgba(255, 0, 60, 0.05)',
         borderRadius: 16,
         padding: 16,
         flexDirection: 'row',
@@ -449,11 +459,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         gap: 8,
         borderWidth: 1,
-        borderColor: '#FEE2E2',
+        borderColor: 'rgba(255, 0, 60, 0.3)',
         marginBottom: 80,
     },
     logoutText: {
-        color: '#EF4444',
+        color: '#FF003C',
         fontWeight: 'bold',
     },
 });

@@ -1,12 +1,25 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, Platform, StatusBar } from 'react-native';
 import { ChevronLeft, Camera, Save } from 'lucide-react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../context/ThemeContext';
 
 export function EditProfileScreen({ navigation }: { navigation: any }) {
     const [name, setName] = useState('Priya Sharma');
     const [email, setEmail] = useState('priya.sharma@email.com');
     const [bio, setBio] = useState('Skincare enthusiast ✨');
+    const { colors } = useTheme();
+
+    const themeStyles = {
+        container: { backgroundColor: colors.background },
+        text: { color: colors.text },
+        subText: { color: colors.subText },
+        primaryText: { color: colors.primary },
+        headerBtn: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary },
+        avatarBg: { backgroundColor: colors.card, borderColor: `${colors.primary}80`, shadowColor: colors.primary },
+        cameraOpt: { backgroundColor: colors.primary, borderColor: colors.background },
+        input: { backgroundColor: colors.card, borderColor: `${colors.border}`, color: colors.text },
+    };
 
     const handleSave = () => {
         // Implement save logic here
@@ -15,20 +28,20 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ChevronLeft size={24} color="#1F2937" />
+                <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, themeStyles.headerBtn]}>
+                    <ChevronLeft size={24} color={colors.text} />
                 </TouchableOpacity>
-                <Text style={styles.headerTitle}>Edit Profile</Text>
+                <Text style={[styles.headerTitle, themeStyles.text]}>Edit Profile</Text>
                 <View style={{ width: 24 }} />
             </View>
 
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.avatarSection}>
-                    <View style={styles.avatarContainer}>
+                    <View style={[styles.avatarContainer, themeStyles.avatarBg]}>
                         <Text style={styles.avatarEmoji}>👩🏻</Text>
-                        <TouchableOpacity style={styles.cameraButton}>
+                        <TouchableOpacity style={[styles.cameraButton, themeStyles.cameraOpt]}>
                             <Camera size={20} color="white" />
                         </TouchableOpacity>
                     </View>
@@ -36,33 +49,36 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
 
                 <View style={styles.formSection}>
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Full Name</Text>
+                        <Text style={[styles.label, themeStyles.subText]}>Full Name</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, themeStyles.input]}
                             value={name}
                             onChangeText={setName}
                             placeholder="Enter your name"
+                            placeholderTextColor={colors.subText}
                         />
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email Address</Text>
+                        <Text style={[styles.label, themeStyles.subText]}>Email Address</Text>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, themeStyles.input]}
                             value={email}
                             onChangeText={setEmail}
                             placeholder="Enter your email"
+                            placeholderTextColor={colors.subText}
                             keyboardType="email-address"
                         />
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Bio</Text>
+                        <Text style={[styles.label, themeStyles.subText]}>Bio</Text>
                         <TextInput
-                            style={[styles.input, styles.textArea]}
+                            style={[styles.input, styles.textArea, themeStyles.input]}
                             value={bio}
                             onChangeText={setBio}
                             placeholder="Tell us about yourself"
+                            placeholderTextColor={colors.subText}
                             multiline
                             numberOfLines={4}
                         />
@@ -71,8 +87,8 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
 
                 <TouchableOpacity onPress={handleSave}>
                     <LinearGradient
-                        colors={['#14B8A6', '#10B981']}
-                        style={styles.saveButton}
+                        colors={[colors.primary, colors.secondary]}
+                        style={[styles.saveButton, { shadowColor: colors.primary }]}
                     >
                         <Save size={20} color="white" style={styles.saveIcon} />
                         <Text style={styles.saveButtonText}>Save Changes</Text>
@@ -86,7 +102,7 @@ export function EditProfileScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     header: {
         flexDirection: 'row',
@@ -98,17 +114,19 @@ const styles = StyleSheet.create({
     backButton: {
         padding: 8,
         borderRadius: 12,
-        backgroundColor: 'white',
-        shadowColor: '#000',
+        backgroundColor: '#12121A',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
+        shadowOpacity: 0.15,
         shadowRadius: 4,
         elevation: 2,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     content: {
         padding: 24,
@@ -121,15 +139,15 @@ const styles = StyleSheet.create({
         width: 100,
         height: 100,
         borderRadius: 50,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#12121A',
         alignItems: 'center',
         justifyContent: 'center',
         position: 'relative',
         borderWidth: 4,
-        borderColor: 'white',
-        shadowColor: '#000',
+        borderColor: 'rgba(0, 229, 255, 0.5)',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
+        shadowOpacity: 0.2,
         shadowRadius: 8,
         elevation: 4,
     },
@@ -140,11 +158,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         bottom: 0,
         right: 0,
-        backgroundColor: '#14B8A6',
+        backgroundColor: '#00E5FF',
         padding: 8,
         borderRadius: 20,
         borderWidth: 3,
-        borderColor: 'white',
+        borderColor: '#09090B',
     },
     formSection: {
         marginBottom: 32,
@@ -155,17 +173,17 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#4B5563',
+        color: '#94A3B8',
         marginBottom: 8,
     },
     input: {
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderRadius: 16,
         padding: 16,
         fontSize: 16,
-        color: '#1F2937',
+        color: '#E2E8F0',
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     textArea: {
         height: 100,
@@ -177,11 +195,11 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 18,
         borderRadius: 20,
-        shadowColor: '#14B8A6',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.2,
-        shadowRadius: 8,
-        elevation: 4,
+        shadowOpacity: 0.3,
+        shadowRadius: 10,
+        elevation: 5,
     },
     saveIcon: {
         marginRight: 8,

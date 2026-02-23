@@ -107,7 +107,7 @@ export const GlowyAgent = () => {
             >
                 {/* Header */}
                 <LinearGradient
-                    colors={['#14B8A6', '#0D9488']}
+                    colors={['#09090B', '#12121A']}
                     style={styles.header}
                 >
                     <View style={styles.headerContent}>
@@ -124,7 +124,7 @@ export const GlowyAgent = () => {
                         </View>
                     </View>
                     <TouchableOpacity onPress={toggleOpen} style={styles.closeButton}>
-                        <X color="white" size={24} />
+                        <X color="#E2E8F0" size={24} />
                     </TouchableOpacity>
                 </LinearGradient>
 
@@ -171,13 +171,13 @@ export const GlowyAgent = () => {
                             disabled={loading || !input.trim()}
                         >
                             <LinearGradient
-                                colors={loading || !input.trim() ? ['#9CA3AF', '#9CA3AF'] : ['#14B8A6', '#0D9488']}
+                                colors={loading || !input.trim() ? ['#1F2937', '#374151'] : ['#00E5FF', '#007BFF']}
                                 style={styles.sendGradient}
                             >
                                 {loading ? (
                                     <ActivityIndicator size="small" color="white" />
                                 ) : (
-                                    <Send color="white" size={20} />
+                                    <Send color="#09090B" size={20} />
                                 )}
                             </LinearGradient>
                         </TouchableOpacity>
@@ -193,7 +193,7 @@ export const GlowyAgent = () => {
                     activeOpacity={0.8}
                 >
                     <LinearGradient
-                        colors={['#ffffff', '#f0fdfa']}
+                        colors={['#12121A', '#12121A']}
                         style={styles.fabGradient}
                     >
                         <Image
@@ -201,7 +201,7 @@ export const GlowyAgent = () => {
                             style={styles.fabImage}
                         />
                         <View style={styles.sparkleBadge}>
-                            <Sparkles size={12} color="white" />
+                            <Sparkles size={12} color="#00E5FF" />
                         </View>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -213,12 +213,12 @@ export const GlowyAgent = () => {
 const styles = StyleSheet.create({
     fab: {
         position: 'absolute',
-        bottom: 90, // Just above tab bar
+        bottom: 120, // Moved up above the tab bar
         right: 20,
         width: 64,
         height: 64,
         borderRadius: 32,
-        shadowColor: '#14B8A6',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         padding: 4,
         borderWidth: 2,
-        borderColor: '#14B8A6',
+        borderColor: '#00E5FF',
     },
     fabImage: {
         width: '100%',
@@ -245,11 +245,11 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: -4,
         right: -4,
-        backgroundColor: '#F59E0B',
+        backgroundColor: 'rgba(0, 229, 255, 0.1)',
         borderRadius: 12,
         padding: 4,
         borderWidth: 2,
-        borderColor: 'white',
+        borderColor: '#00E5FF',
     },
     backdrop: {
         ...StyleSheet.absoluteFillObject,
@@ -265,16 +265,18 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         height: height * 0.7,
-        backgroundColor: '#FAFAFA',
+        backgroundColor: '#09090B',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         zIndex: 1001,
-        shadowColor: '#000',
+        shadowColor: '#00E5FF',
         shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.2,
         shadowRadius: 10,
         elevation: 20,
         overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     header: {
         flexDirection: 'row',
@@ -282,6 +284,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         padding: 16,
         paddingTop: 20,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0, 229, 255, 0.2)',
     },
     headerContent: {
         flexDirection: 'row',
@@ -296,7 +300,7 @@ const styles = StyleSheet.create({
         height: 40,
         borderRadius: 20,
         borderWidth: 2,
-        borderColor: 'white',
+        borderColor: '#00E5FF',
     },
     onlineBadge: {
         position: 'absolute',
@@ -305,17 +309,17 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: '#10B981',
+        backgroundColor: '#00E5FF',
         borderWidth: 2,
-        borderColor: '#14B8A6',
+        borderColor: '#09090B',
     },
     headerTitle: {
-        color: 'white',
+        color: '#E2E8F0',
         fontSize: 18,
         fontWeight: 'bold',
     },
     headerStatus: {
-        color: 'rgba(255,255,255,0.9)',
+        color: '#94A3B8',
         fontSize: 12,
     },
     closeButton: {
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
     },
     messagesContainer: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#09090B',
     },
     messagesContent: {
         padding: 16,
@@ -336,43 +340,49 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     userBubble: {
-        backgroundColor: '#14B8A6',
+        backgroundColor: 'rgba(0, 123, 255, 0.3)',
         alignSelf: 'flex-end',
         borderBottomRightRadius: 4,
+        borderWidth: 1,
+        borderColor: '#007BFF',
     },
     glowyBubble: {
-        backgroundColor: 'white',
+        backgroundColor: 'rgba(0, 229, 255, 0.05)',
         alignSelf: 'flex-start',
         borderBottomLeftRadius: 4,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.3)',
     },
     messageText: {
         fontSize: 15,
         lineHeight: 20,
     },
     userText: {
-        color: 'white',
+        color: '#E2E8F0',
     },
     glowyText: {
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     inputArea: {
         padding: 16,
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         borderTopWidth: 1,
-        borderTopColor: '#E5E7EB',
+        borderTopColor: 'rgba(0, 229, 255, 0.2)',
         flexDirection: 'row',
         alignItems: 'center',
         gap: 12,
     },
     input: {
         flex: 1,
-        backgroundColor: '#F3F4F6',
+        backgroundColor: '#09090B',
         borderRadius: 24,
         paddingHorizontal: 16,
         paddingVertical: 12,
         fontSize: 16,
-        color: '#1F2937',
+        color: '#E2E8F0',
         maxHeight: 100,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     sendButton: {
         width: 44,

@@ -1,3 +1,5 @@
+import { readAsStringAsync } from 'expo-file-system/legacy';
+import { decode } from 'base-64';
 import { supabase } from '../lib/supabase';
 import { compressImage, createThumbnail } from '../utils/image-utils';
 
@@ -36,13 +38,28 @@ export class StorageService {
 
             console.log('📁 Upload paths:', { imagePath, thumbnailPath });
 
-            // For React Native, we need to use FormData or ArrayBuffer
-            // Let's try using the file directly with fetch
-            const imageFile = await fetch(compressedUri);
-            const imageBlob = await imageFile.blob();
-            const imageArrayBuffer = await imageBlob.arrayBuffer();
+            // For React Native, we use FileSystem to read the file as base64
+            // then convert to ArrayBuffer which Supabase Storage accepts
+            const [imageContent, thumbContent] = await Promise.all([
+                readAsStringAsync(compressedUri, { encoding: 'base64' }),
+                readAsStringAsync(thumbnailUri, { encoding: 'base64' })
+            ]);
 
-            console.log('📦 Image blob size:', imageBlob.size);
+            const decodeBase64 = (base64: string) => {
+                const binaryString = decode(base64);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return bytes.buffer;
+            };
+
+            const imageArrayBuffer = decodeBase64(imageContent);
+            const thumbArrayBuffer = decodeBase64(thumbContent);
+
+            console.log('📦 Image size (decoded):', imageArrayBuffer.byteLength);
+            console.log('📦 Thumb size (decoded):', thumbArrayBuffer.byteLength);
 
             // Upload main image
             const { data: uploadData, error: imageError } = await supabase.storage
@@ -61,13 +78,9 @@ export class StorageService {
             console.log('✅ Main image uploaded:', uploadData);
 
             // Upload thumbnail
-            const thumbnailFile = await fetch(thumbnailUri);
-            const thumbnailBlob = await thumbnailFile.blob();
-            const thumbnailArrayBuffer = await thumbnailBlob.arrayBuffer();
-
             const { data: thumbData, error: thumbnailError } = await supabase.storage
                 .from(BUCKET_NAME)
-                .upload(thumbnailPath, thumbnailArrayBuffer, {
+                .upload(thumbnailPath, thumbArrayBuffer, {
                     contentType: 'image/jpeg',
                     cacheControl: '3600',
                     upsert: false,

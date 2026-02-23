@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert } from 'react-native';
+import { View, Text, Switch, TouchableOpacity, ScrollView, StyleSheet, SafeAreaView, Alert, Platform, StatusBar } from 'react-native';
 import { ChevronLeft, Lock, Bell, Moon, Languages, Shield, LogOut, ChevronRight, UserCog } from 'lucide-react-native';
 import { useTheme } from '../context/ThemeContext';
 import { useProduct } from '../context/ProductContext'; // Import Product Context
@@ -7,18 +7,29 @@ import { useProduct } from '../context/ProductContext'; // Import Product Contex
 import { useAuth } from '../context/AuthContext'; // Import Auth Context
 
 export function AppSettingsScreen({ navigation }: { navigation: any }) {
-    const { isDark, toggleTheme } = useTheme();
+    const { isDark, theme, setTheme, colors } = useTheme();
     const { isAdmin, toggleAdmin } = useProduct();
     const { signOut } = useAuth(); // Use Auth Context
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
     const themeStyles = {
-        container: { backgroundColor: isDark ? '#111827' : '#FAF7F5' },
-        header: { backgroundColor: isDark ? '#1F2937' : 'white', borderBottomColor: isDark ? '#374151' : '#F3F4F6' },
-        text: { color: isDark ? '#F9FAFB' : '#1F2937' },
-        subText: { color: isDark ? '#9CA3AF' : '#6B7280' },
-        card: { backgroundColor: isDark ? '#1F2937' : 'white' },
-        icon: { color: isDark ? '#F9FAFB' : '#1F2937' }
+        container: { backgroundColor: colors.background },
+        header: { backgroundColor: colors.background, borderBottomColor: colors.border },
+        text: { color: colors.text },
+        subText: { color: colors.subText },
+        card: { backgroundColor: colors.card, borderColor: colors.border, shadowColor: colors.primary },
+        icon: { color: colors.primary },
+        iconBg: { backgroundColor: colors.background, borderColor: colors.border },
+    };
+
+    const handleThemeChange = () => {
+        if (theme === 'light') {
+            setTheme('dark');
+        } else if (theme === 'dark') {
+            setTheme('genz');
+        } else {
+            setTheme('light');
+        }
     };
 
     const handleDeleteAccount = () => {
@@ -57,8 +68,8 @@ export function AppSettingsScreen({ navigation }: { navigation: any }) {
             disabled={type === 'toggle'}
         >
             <View style={styles.settingLeft}>
-                <View style={[styles.iconContainer, { backgroundColor: isDark ? '#374151' : '#F3F4F6' }]}>
-                    <Icon size={20} color={isDark ? '#E5E7EB' : '#4B5563'} />
+                <View style={[styles.iconContainer, themeStyles.iconBg]}>
+                    <Icon size={20} color={colors.primary} />
                 </View>
                 <Text style={[styles.settingLabel, themeStyles.text]}>{label}</Text>
             </View>
@@ -67,13 +78,13 @@ export function AppSettingsScreen({ navigation }: { navigation: any }) {
                     <Switch
                         value={toggleValue}
                         onValueChange={onToggle}
-                        trackColor={{ false: '#D1D5DB', true: '#14B8A6' }}
+                        trackColor={{ false: colors.border, true: colors.primary }}
                         thumbColor={'white'}
                     />
                 ) : (
                     <>
                         <Text style={[styles.settingValue, themeStyles.subText]}>{value}</Text>
-                        <ChevronRight size={20} color={isDark ? '#6B7280' : '#9CA3AF'} />
+                        <ChevronRight size={20} color={colors.subText} />
                     </>
                 )}
             </View>
@@ -81,10 +92,10 @@ export function AppSettingsScreen({ navigation }: { navigation: any }) {
     );
 
     return (
-        <SafeAreaView style={[styles.container, themeStyles.container]}>
+        <SafeAreaView style={[styles.container, themeStyles.container, { paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0 }]}>
             <View style={[styles.header, themeStyles.header]}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ChevronLeft size={24} color={isDark ? "white" : "#1F2937"} />
+                    <ChevronLeft size={24} color={colors.text} />
                 </TouchableOpacity>
                 <Text style={[styles.headerTitle, themeStyles.text]}>Settings</Text>
                 <View style={{ width: 40 }} />
@@ -95,10 +106,9 @@ export function AppSettingsScreen({ navigation }: { navigation: any }) {
                 <View style={styles.section}>
                     <SettingItem
                         icon={Moon}
-                        label="Dark Mode"
-                        type="toggle"
-                        toggleValue={isDark}
-                        onToggle={toggleTheme}
+                        label="Theme"
+                        value={theme === 'genz' ? 'GenZ' : (theme === 'dark' ? 'Dark' : 'Light')}
+                        onPress={handleThemeChange}
                     />
                     <SettingItem
                         icon={Bell}
@@ -137,19 +147,19 @@ export function AppSettingsScreen({ navigation }: { navigation: any }) {
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.deleteButton, { backgroundColor: isDark ? '#374151' : '#F3F4F6', marginBottom: 12 }]}
+                    style={[styles.deleteButton, { backgroundColor: `${colors.error}1A`, marginBottom: 12, borderColor: `${colors.error}4D`, borderWidth: 1 }]}
                     onPress={handleSignOut}
                 >
-                    <LogOut size={20} color={isDark ? "#E5E7EB" : "#374151"} />
-                    <Text style={[styles.deleteText, { color: isDark ? "#E5E7EB" : "#374151" }]}>Sign Out</Text>
+                    <LogOut size={20} color={colors.error} />
+                    <Text style={[styles.deleteText, { color: colors.error }]}>Sign Out</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                    style={[styles.deleteButton, { backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#FEE2E2' }]}
+                    style={[styles.deleteButton, { backgroundColor: `${colors.error}1A`, borderColor: `${colors.error}4D`, borderWidth: 1 }]}
                     onPress={handleDeleteAccount}
                 >
-                    <LogOut size={20} color="#EF4444" />
-                    <Text style={styles.deleteText}>Delete Account</Text>
+                    <LogOut size={20} color={colors.error} />
+                    <Text style={[styles.deleteText, { color: colors.error }]}>Delete Account</Text>
                 </TouchableOpacity>
 
                 <Text style={[styles.versionText, themeStyles.subText]}>Version 1.0.0</Text>
@@ -161,7 +171,7 @@ export function AppSettingsScreen({ navigation }: { navigation: any }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FAF7F5',
+        backgroundColor: '#09090B',
     },
     header: {
         flexDirection: 'row',
@@ -169,9 +179,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         paddingHorizontal: 24,
         paddingVertical: 16,
-        backgroundColor: 'white',
+        backgroundColor: '#09090B',
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: 'rgba(0, 229, 255, 0.2)',
     },
     backButton: {
         padding: 8,
@@ -181,7 +191,7 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     content: {
         padding: 24,
@@ -189,7 +199,7 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#6B7280',
+        color: '#94A3B8',
         marginBottom: 12,
         marginLeft: 4,
         textTransform: 'uppercase',
@@ -202,14 +212,16 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        backgroundColor: 'white',
+        backgroundColor: '#12121A',
         padding: 16,
         borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        shadowColor: '#00E5FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 5,
+        borderWidth: 1,
+        borderColor: 'rgba(0, 229, 255, 0.2)',
     },
     settingLeft: {
         flexDirection: 'row',
@@ -226,7 +238,7 @@ const styles = StyleSheet.create({
     settingLabel: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#1F2937',
+        color: '#E2E8F0',
     },
     settingRight: {
         flexDirection: 'row',
@@ -235,14 +247,14 @@ const styles = StyleSheet.create({
     },
     settingValue: {
         fontSize: 14,
-        color: '#6B7280',
+        color: '#94A3B8',
     },
     deleteButton: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
-        backgroundColor: '#FEE2E2',
+        backgroundColor: 'rgba(255, 0, 60, 0.1)',
         padding: 16,
         borderRadius: 16,
         marginBottom: 32,
@@ -254,7 +266,7 @@ const styles = StyleSheet.create({
     },
     versionText: {
         textAlign: 'center',
-        color: '#9CA3AF',
+        color: '#94A3B8',
         fontSize: 12,
         marginBottom: 40,
     },
